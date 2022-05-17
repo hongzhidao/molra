@@ -72,13 +72,19 @@ nxt_http_action_t *
 nxt_http_return(nxt_task_t *task, nxt_http_request_t *r,
     nxt_http_action_t *action)
 {
+    nxt_str_t               loc;
     nxt_http_field_t        *field;
     nxt_http_return_conf_t  *conf;
 
     conf = action->u.conf;
 
-    nxt_debug(task, "http return: %d (loc: \"%V\")",
-              conf->status, &conf->location);
+    loc = conf->location;
+
+    if (loc.start == NULL) {
+        nxt_str_set(&loc, "");
+    }
+
+    nxt_debug(task, "http return: %d (loc: \"%V\")", conf->status, &loc);
 
     if (conf->status >= NXT_HTTP_BAD_REQUEST
         && conf->status <= NXT_HTTP_SERVER_ERROR_MAX)
