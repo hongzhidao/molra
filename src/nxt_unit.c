@@ -911,7 +911,6 @@ nxt_unit_ready(nxt_unit_ctx_t *ctx, int ready_fd, uint32_t stream, int queue_fd)
     msg.mmap = 0;
     msg.nf = 0;
     msg.mf = 0;
-    msg.tracking = 0;
 
     nxt_socket_msg_oob_init(&oob, fds);
 
@@ -2636,7 +2635,6 @@ nxt_unit_mmap_buf_send(nxt_unit_request_info_t *req,
     m.msg.mmap = hdr != NULL && m.mmap_msg.size > 0;
     m.msg.nf = 0;
     m.msg.mf = 0;
-    m.msg.tracking = 0;
 
     rc = NXT_UNIT_ERROR;
 
@@ -3288,7 +3286,6 @@ skip_response_send:
     msg.mmap = 0;
     msg.nf = 0;
     msg.mf = 0;
-    msg.tracking = 0;
 
     (void) nxt_unit_port_send(req->ctx, req->response_port,
                               &msg, sizeof(msg), NULL);
@@ -3611,7 +3608,6 @@ nxt_unit_send_oosm(nxt_unit_ctx_t *ctx, nxt_unit_port_t *port)
     msg.mmap = 0;
     msg.nf = 0;
     msg.mf = 0;
-    msg.tracking = 0;
 
     res = nxt_unit_port_send(ctx, lib->router_port, &msg, sizeof(msg), NULL);
     if (nxt_slow_path(res != sizeof(msg))) {
@@ -3897,7 +3893,6 @@ nxt_unit_send_mmap(nxt_unit_ctx_t *ctx, nxt_unit_port_t *port, int fd)
     msg.mmap = 0;
     msg.nf = 0;
     msg.mf = 0;
-    msg.tracking = 0;
 
     nxt_socket_msg_oob_init(&oob, fds);
 
@@ -4382,7 +4377,6 @@ nxt_unit_send_shm_ack(nxt_unit_ctx_t *ctx, pid_t pid)
     msg.mmap = 0;
     msg.nf = 0;
     msg.mf = 0;
-    msg.tracking = 0;
 
     res = nxt_unit_port_send(ctx, lib->router_port, &msg, sizeof(msg), NULL);
     if (nxt_slow_path(res != sizeof(msg))) {
@@ -5348,7 +5342,6 @@ nxt_unit_send_port(nxt_unit_ctx_t *ctx, nxt_unit_port_t *dst,
     m.msg.mmap = 0;
     m.msg.nf = 0;
     m.msg.mf = 0;
-    m.msg.tracking = 0;
 
     m.new_port.id = port->id.id;
     m.new_port.pid = port->id.pid;
