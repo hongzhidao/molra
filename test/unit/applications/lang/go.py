@@ -7,6 +7,11 @@ from unit.option import option
 
 class TestApplicationGo(TestApplicationProto):
     def prepare_env(self, script, name, static=False):
+        try:
+            subprocess.check_output(['which', 'go'])
+        except subprocess.CalledProcessError:
+            return None
+
         if not os.path.exists(option.temp_dir + '/go'):
             os.mkdir(option.temp_dir + '/go')
 
