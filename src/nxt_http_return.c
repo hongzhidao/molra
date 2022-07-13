@@ -21,12 +21,15 @@ static const nxt_http_request_state_t  nxt_http_return_send_state;
 
 
 nxt_int_t
-nxt_http_return_init(nxt_mp_t *mp, nxt_http_action_t *action,
+nxt_http_return_init(nxt_router_conf_t *rtcf, nxt_http_action_t *action,
     nxt_http_action_conf_t *acf)
 {
+    nxt_mp_t                *mp;
     nxt_str_t               *loc;
     nxt_uint_t              encode;
     nxt_http_return_conf_t  *conf;
+
+    mp = rtcf->mem_pool;
 
     conf = nxt_mp_zget(mp, sizeof(nxt_http_return_conf_t));
     if (nxt_slow_path(conf == NULL)) {
