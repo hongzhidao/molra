@@ -1480,7 +1480,7 @@ class TestRouting(TestApplicationProto):
 
     def test_routes_source_port(self):
         def sock_port():
-            _, sock = self.http(b'', start=True, raw=True, no_recv=True)
+            sock = self.http(b'', raw=True, no_recv=True)
             port = sock.getsockname()[1]
             return (sock, port)
 

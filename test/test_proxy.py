@@ -187,9 +187,8 @@ Content-Length: 10
 
         socks = []
         for i in range(10):
-            _, sock = self.post_http10(
+            sock = self.post_http10(
                 body=payload + str(i),
-                start=True,
                 no_recv=True,
                 read_buffer_size=buff_size,
             )
@@ -250,9 +249,7 @@ Content-Length: 10
         ), 'custom header 5'
 
     def test_proxy_fragmented(self):
-        _, sock = self.http(
-            b"""GET / HTT""", raw=True, start=True, no_recv=True
-        )
+        sock = self.http(b"""GET / HTT""", raw=True, no_recv=True)
 
         time.sleep(1)
 
@@ -268,9 +265,7 @@ Content-Length: 10
         sock.close()
 
     def test_proxy_fragmented_close(self):
-        _, sock = self.http(
-            b"""GET / HTT""", raw=True, start=True, no_recv=True
-        )
+        sock = self.http(b"""GET / HTT""", raw=True, no_recv=True)
 
         time.sleep(1)
 
@@ -279,9 +274,7 @@ Content-Length: 10
         sock.close()
 
     def test_proxy_fragmented_body(self):
-        _, sock = self.http(
-            b"""GET / HTT""", raw=True, start=True, no_recv=True
-        )
+        sock = self.http(b"""GET / HTT""", raw=True, no_recv=True)
 
         time.sleep(1)
 
@@ -308,9 +301,7 @@ Content-Length: 10
         assert resp['body'] == "X" * 30000, 'body'
 
     def test_proxy_fragmented_body_close(self):
-        _, sock = self.http(
-            b"""GET / HTT""", raw=True, start=True, no_recv=True
-        )
+        sock = self.http(b"""GET / HTT""", raw=True, no_recv=True)
 
         time.sleep(1)
 
@@ -402,7 +393,7 @@ Content-Length: 10
             {"pass": "applications/delayed"}, 'listeners/*:7081'
         ), 'delayed configure'
 
-        _, sock = self.post_http10(
+        sock = self.post_http10(
             headers={
                 'Host': 'localhost',
                 'Content-Type': 'text/html',
@@ -411,14 +402,13 @@ Content-Length: 10
                 'X-Delay': '1',
             },
             body='0123456789' * 1000,
-            start=True,
             no_recv=True,
         )
 
         assert re.search('200 OK', sock.recv(100).decode()), 'first'
         sock.close()
 
-        _, sock = self.post_http10(
+        sock = self.post_http10(
             headers={
                 'Host': 'localhost',
                 'Content-Type': 'text/html',
@@ -427,7 +417,6 @@ Content-Length: 10
                 'X-Delay': '1',
             },
             body='0123456789' * 1000,
-            start=True,
             no_recv=True,
         )
 

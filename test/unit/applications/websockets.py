@@ -43,7 +43,10 @@ class TestApplicationWebsocket(TestApplicationProto):
                 'Sec-WebSocket-Version': 13,
             }
 
-        _, sock = self.get(headers=headers, no_recv=True, start=True,)
+        sock = self.get(
+            headers=headers,
+            no_recv=True,
+        )
 
         resp = ''
         while True:
