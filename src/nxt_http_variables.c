@@ -7,6 +7,8 @@
 #include <nxt_http.h>
 
 
+static nxt_int_t nxt_http_var_request_time(nxt_task_t *task, nxt_str_t *str,
+    void *ctx, uint16_t field);
 static nxt_int_t nxt_http_var_method(nxt_task_t *task, nxt_str_t *str,
     void *ctx, uint16_t field);
 static nxt_int_t nxt_http_var_uri(nxt_task_t *task, nxt_str_t *str, void *ctx,
@@ -39,6 +41,9 @@ static nxt_int_t nxt_http_var_cookie(nxt_task_t *task, nxt_str_t *str,
 
 static nxt_var_decl_t  nxt_http_vars[] = {
     {
+        .name = nxt_string("request_time"),
+        .handler = nxt_http_var_request_time,
+    }, {
         .name = nxt_string("method"),
         .handler = nxt_http_var_method,
     }, {
@@ -88,6 +93,34 @@ nxt_int_t
 nxt_http_register_variables(void)
 {
     return nxt_var_register(nxt_http_vars, nxt_nitems(nxt_http_vars));
+}
+
+
+static nxt_int_t
+nxt_http_var_request_time(nxt_task_t *task, nxt_str_t *str, void *ctx,
+    uint16_t field)
+{
+    u_char              *p;
+    nxt_msec_t          ms;
+    nxt_nsec_t          now;
+    nxt_http_request_t  *r;
+
+    r = ctx;
+
+    now = nxt_thread_monotonic_time(task->thread);
+    ms = (now - r->start_time) / 1000000;
+
+    str->start = nxt_mp_nget(r->mem_pool, NXT_TIME_T_LEN + 4);
+    if (nxt_slow_path(str->start == NULL)) {
+        return NXT_ERROR;
+    }
+
+    p = nxt_sprintf(str->start, str->start + NXT_TIME_T_LEN, "%T.%03M",
+                    (nxt_time_t) ms / 1000, ms % 1000);
+
+    str->length = p - str->start;
+
+    return NXT_OK;
 }
 
 
