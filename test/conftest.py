@@ -180,6 +180,9 @@ def pytest_sessionstart(session):
     option.available = {'modules': {}, 'features': {}}
 
     unit = unit_run()
+    output_version = subprocess.check_output(
+        [unit['unitd'], '--version'], stderr=subprocess.STDOUT
+    ).decode()
 
     # read unit.log
 
@@ -206,12 +209,12 @@ def pytest_sessionstart(session):
 
     # discover modules from check
 
-    option.available['modules']['openssl'] = check_openssl(unit['unitd'])
     option.available['modules']['go'] = check_go(
         option.current_dir, unit['temp_dir'], option.test_dir
     )
     option.available['modules']['node'] = check_node(option.current_dir)
-    option.available['modules']['regex'] = check_regex(unit['unitd'])
+    option.available['modules']['openssl'] = check_openssl(output_version)
+    option.available['modules']['regex'] = check_regex(output_version)
 
     # remove None values
 
