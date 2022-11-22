@@ -1061,6 +1061,10 @@ nxt_router_temp_conf(nxt_task_t *task)
         goto fail;
     }
 
+#if (NXT_HAVE_NJS)
+    nxt_http_register_js_proto(rtcf->tstr_state->jcf);
+#endif
+
     tmp = nxt_mp_create(1024, 128, 256, 32);
     if (nxt_slow_path(tmp == NULL)) {
         goto fail;
