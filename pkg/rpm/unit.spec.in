@@ -50,6 +50,7 @@ Requires(preun):   systemd
 Requires(postun):  systemd
 
 BuildRequires: pcre2-devel
+BuildRequires: pkg-config
 
 %description
 NGINX Unit is a runtime and delivery environment for modern distributed
@@ -80,6 +81,9 @@ Library and include files required for NGINX Unit modules development.
 %setup -q
 
 %build
+%{__make} %{?_smp_mflags} -C pkg/contrib .njs
+
+PKG_CONFIG_PATH=%{bdir}/pkg/contrib/njs/build \
 ./configure \
 	%{CONFIGURE_ARGS} \
 	--modules=%{_libdir}/unit/debug-modules \
@@ -90,6 +94,8 @@ Library and include files required for NGINX Unit modules development.
 %{__make} %{?_smp_mflags}
 %{__make} %{?_smp_mflags} build/libunit.a
 %{__mv} build build-debug
+
+PKG_CONFIG_PATH=%{bdir}/pkg/contrib/njs/build \
 ./configure \
 	%{CONFIGURE_ARGS} \
 	--modules=%{_libdir}/unit/modules \
