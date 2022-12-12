@@ -23,8 +23,10 @@ from unit.check.tls import check_openssl
 from unit.http import TestHTTP
 from unit.log import Log
 from unit.option import option
+from unit.utils import check_findmnt
 from unit.utils import public_dir
 from unit.utils import waitforfiles
+from unit.utils import waitforunmount
 
 
 def pytest_addoption(parser):
@@ -84,6 +86,7 @@ _fds_info = {
     },
 }
 http = TestHTTP()
+is_findmnt = check_findmnt()
 
 
 def pytest_configure(config):
@@ -310,6 +313,9 @@ def run(request):
 
     if not option.restart:
         _clear_conf(unit['temp_dir'] + '/control.unit.sock', log=log)
+
+        if is_findmnt and not waitforunmount(unit['temp_dir'], timeout=600):
+            exit('Could not unmount some filesystems in tmp dir.')
 
         for item in os.listdir(unit['temp_dir']):
             if item not in [
