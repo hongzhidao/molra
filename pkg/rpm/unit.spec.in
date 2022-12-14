@@ -50,7 +50,7 @@ Requires(preun):   systemd
 Requires(postun):  systemd
 
 BuildRequires: pcre2-devel
-BuildRequires: pkg-config
+BuildRequires: pkgconfig
 
 %description
 NGINX Unit is a runtime and delivery environment for modern distributed
