@@ -67,7 +67,9 @@ class TestApplicationTLS(TestApplicationProto):
 
         return ssl.get_server_certificate(addr, ssl_version=ssl_version)
 
-    def openssl_conf(self, rewrite=False, alt_names=[]):
+    def openssl_conf(self, rewrite=False, alt_names=None):
+        alt_names = alt_names or []
+
         conf_path = option.temp_dir + '/openssl.conf'
 
         if not rewrite and os.path.exists(conf_path):
