@@ -12,15 +12,18 @@ EXPORT_DIR := $(VERSION)
 
 MODULES ?= go jsc node perl php python ruby minimal
 
+VARIANT ?= bullseye
+
 VERSION_minimal ?=
-CONTAINER_minimal ?= debian:bullseye-slim
+CONTAINER_minimal ?= debian:$(VARIANT)-slim
 CONFIGURE_minimal ?=
 INSTALL_minimal ?=	version
 define COPY_minimal
 endef
 
 VERSION_go ?=		1.17
-CONTAINER_go ?=		golang:$(VERSION_go)
+VARIANT_go ?=		$(VARIANT)
+CONTAINER_go ?=		golang:$(VERSION_go)-$(VARIANT_go)
 CONFIGURE_go ?=		go --go-path=$$GOPATH
 INSTALL_go ?=		go-install-src libunit-install
 define COPY_go
@@ -36,7 +39,8 @@ INSTALL_jsc ?=		java-shared-install java-install
 COPY_jsc =	 		COPY --from=BUILDER /usr/share/unit-jsc-common/ /usr/share/unit-jsc-common/
 
 VERSION_node ?=		16
-CONTAINER_node ?=	node:$(VERSION_node)
+VARIANT_node ?=		$(VARIANT)
+CONTAINER_node ?=	node:$(VERSION_node)-$(VARIANT_node)
 CONFIGURE_node ?=	nodejs --node-gyp=/usr/local/lib/node_modules/npm/bin/node-gyp-bin/node-gyp
 INSTALL_node ?=		node node-install libunit-install
 define COPY_node
@@ -46,25 +50,29 @@ COPY --from=BUILDER /usr/local/lib/node_modules/unit-http/ /usr/local/lib/node_m
 endef
 
 VERSION_perl ?=		5.34
-CONTAINER_perl ?=	perl:$(VERSION_perl)
+VARIANT_perl ?=		$(VARIANT)
+CONTAINER_perl ?=	perl:$(VERSION_perl)-$(VARIANT_perl)
 CONFIGURE_perl ?=	perl
 INSTALL_perl ?=		perl-install
 COPY_perl =
 
 VERSION_php ?=		8.0
-CONTAINER_php ?=	php:$(VERSION_php)-cli
+VARIANT_php ?=		cli-$(VARIANT)
+CONTAINER_php ?=	php:$(VERSION_php)-$(VARIANT_php)
 CONFIGURE_php ?=	php
 INSTALL_php ?=		php-install
 COPY_php =			RUN ldconfig
 
 VERSION_python ?=	3.9
-CONTAINER_python ?=	python:$(VERSION_python)
+VARIANT_python ?=	$(VARIANT)
+CONTAINER_python ?=	python:$(VERSION_python)-$(VARIANT_python)
 CONFIGURE_python ?=	python --config=/usr/local/bin/python3-config
 INSTALL_python ?=	python3-install
 COPY_python =
 
 VERSION_ruby ?=		3.0
-CONTAINER_ruby ?=	ruby:$(VERSION_ruby)
+VARIANT_ruby ?=		$(VARIANT)
+CONTAINER_ruby ?=	ruby:$(VERSION_ruby)-$(VARIANT_ruby)
 CONFIGURE_ruby ?=	ruby
 INSTALL_ruby ?=		ruby-install
 COPY_ruby =			RUN gem install rack
