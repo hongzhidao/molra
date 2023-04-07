@@ -55,9 +55,9 @@ COPY --from=BUILDER /requirements.apt /requirements.apt
 RUN set -x \
     && mkdir -p /var/lib/unit/ \
     && mkdir /docker-entrypoint.d/ \
-    && groupadd --system unit \
+    && groupadd --gid 999 unit \
     && useradd \
-         --system \
+         --uid 999 \
          --gid unit \
          --no-create-home \
          --home /nonexistent \
