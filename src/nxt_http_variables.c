@@ -242,11 +242,15 @@ nxt_http_var_request_line(nxt_task_t *task, nxt_str_t *str, void *ctx,
 {
     size_t              length;
     u_char              *p, *start;
+    nxt_str_t           *target;
     nxt_http_request_t  *r;
 
     r = ctx;
 
-    length = r->method->length + 1 + r->target.length + 1 + r->version.length;
+    target = (r->original_target.start != NULL) ? &r->original_target
+                                                : &r->target;
+
+    length = r->method->length + 1 + target->length + 1 + r->version.length;
 
     start = nxt_mp_nget(r->mem_pool, length);
     if (nxt_slow_path(start == NULL)) {
@@ -258,9 +262,9 @@ nxt_http_var_request_line(nxt_task_t *task, nxt_str_t *str, void *ctx,
     if (r->method->length != 0) {
         p = nxt_cpymem(p, r->method->start, r->method->length);
 
-        if (r->target.length != 0) {
+        if (target->length != 0) {
             *p++ = ' ';
-            p = nxt_cpymem(p, r->target.start, r->target.length);
+            p = nxt_cpymem(p, target->start, target->length);
 
             if (r->version.length != 0) {
                 *p++ = ' ';
