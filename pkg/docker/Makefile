@@ -10,20 +10,20 @@ PATCHLEVEL ?= 1
 
 EXPORT_DIR := $(VERSION)
 
-MODULES ?= go jsc node perl php python ruby minimal
+MODULES ?= go jsc node perl php python ruby
 
 VARIANT ?= bullseye
 
-VERSION_minimal ?=
+VERSIONS_minimal ?=
 CONTAINER_minimal ?= debian:$(VARIANT)-slim
 CONFIGURE_minimal ?=
 INSTALL_minimal ?=	version
 define COPY_minimal
 endef
 
-VERSION_go ?=		1.17
+VERSIONS_go ?=		1.17
 VARIANT_go ?=		$(VARIANT)
-CONTAINER_go ?=		golang:$(VERSION_go)-$(VARIANT_go)
+$(foreach goversion, $(VERSIONS_go), $(eval CONTAINER_go$(goversion) = golang:$(goversion)-$(VARIANT_go)))
 CONFIGURE_go ?=		go --go-path=$$GOPATH
 INSTALL_go ?=		go-install-src libunit-install
 define COPY_go
@@ -32,15 +32,15 @@ COPY --from=BUILDER /usr/include/nxt_* /usr/include/\n\$
 COPY --from=BUILDER /go/src/ /go/src/
 endef
 
-VERSION_jsc ?=		11
-CONTAINER_jsc ?=	openjdk:$(VERSION_jsc)-jdk
+VERSIONS_jsc ?=		11
+$(foreach jscversion, $(VERSIONS_jsc), $(eval CONTAINER_jsc$(jscversion) = openjdk:$(jscversion)-jdk))
 CONFIGURE_jsc ?=	java --jars=/usr/share/unit-jsc-common/
 INSTALL_jsc ?=		java-shared-install java-install
 COPY_jsc =	 		COPY --from=BUILDER /usr/share/unit-jsc-common/ /usr/share/unit-jsc-common/
 
-VERSION_node ?=		16
+VERSIONS_node ?=	16
 VARIANT_node ?=		$(VARIANT)
-CONTAINER_node ?=	node:$(VERSION_node)-$(VARIANT_node)
+$(foreach nodeversion, $(VERSIONS_node), $(eval CONTAINER_node$(nodeversion) = node:$(nodeversion)-$(VARIANT_node)))
 CONFIGURE_node ?=	nodejs --node-gyp=/usr/local/lib/node_modules/npm/bin/node-gyp-bin/node-gyp
 INSTALL_node ?=		node node-install libunit-install
 define COPY_node
@@ -49,30 +49,30 @@ COPY --from=BUILDER /usr/include/nxt_* /usr/include/\n\$
 COPY --from=BUILDER /usr/local/lib/node_modules/unit-http/ /usr/local/lib/node_modules/unit-http/
 endef
 
-VERSION_perl ?=		5.34
+VERSIONS_perl ?=	5.34
 VARIANT_perl ?=		$(VARIANT)
-CONTAINER_perl ?=	perl:$(VERSION_perl)-$(VARIANT_perl)
+$(foreach perlversion, $(VERSIONS_perl), $(eval CONTAINER_perl$(perlversion) = perl:$(perlversion)-$(VARIANT_perl)))
 CONFIGURE_perl ?=	perl
 INSTALL_perl ?=		perl-install
 COPY_perl =
 
-VERSION_php ?=		8.0
+VERSIONS_php ?=		8.0
 VARIANT_php ?=		cli-$(VARIANT)
-CONTAINER_php ?=	php:$(VERSION_php)-$(VARIANT_php)
+$(foreach phpversion, $(VERSIONS_php), $(eval CONTAINER_php$(phpversion) = php:$(phpversion)-$(VARIANT_php)))
 CONFIGURE_php ?=	php
 INSTALL_php ?=		php-install
 COPY_php =			RUN ldconfig
 
-VERSION_python ?=	3.9
+VERSIONS_python ?=	3.9
 VARIANT_python ?=	$(VARIANT)
-CONTAINER_python ?=	python:$(VERSION_python)-$(VARIANT_python)
+$(foreach pythonversion, $(VERSIONS_python), $(eval CONTAINER_python$(pythonversion) = python:$(pythonversion)-$(VARIANT_python)))
 CONFIGURE_python ?=	python --config=/usr/local/bin/python3-config
 INSTALL_python ?=	python3-install
 COPY_python =
 
-VERSION_ruby ?=		3.0
+VERSIONS_ruby ?=	3.0
 VARIANT_ruby ?=		$(VARIANT)
-CONTAINER_ruby ?=	ruby:$(VERSION_ruby)-$(VARIANT_ruby)
+$(foreach rubyversion, $(VERSIONS_ruby), $(eval CONTAINER_ruby$(rubyversion) = ruby:$(rubyversion)-$(VARIANT_ruby)))
 CONFIGURE_ruby ?=	ruby
 INSTALL_ruby ?=		ruby-install
 COPY_ruby =			RUN gem install rack
@@ -80,7 +80,7 @@ COPY_ruby =			RUN gem install rack
 default:
 	@echo "valid targets: all build dockerfiles push tag export clean"
 
-MODVERSIONS = $(foreach module,$(MODULES),$(module)$(VERSION_$(module)))
+MODVERSIONS = $(foreach module, $(MODULES), $(foreach modversion, $(shell for v in $(VERSIONS_$(module)); do echo $$v; done | sort -r), $(module)$(modversion))) minimal
 
 modname = $(shell echo $1 | /usr/bin/tr -d '.01234567890-')
 
@@ -95,14 +95,14 @@ Dockerfile.%: ../../version
 	cat template.Dockerfile | sed \
 			-e 's,@@VERSION@@,$(VERSION),g' \
 			-e 's,@@PATCHLEVEL@@,$(PATCHLEVEL),g' \
-			-e 's,@@CONTAINER@@,$(CONTAINER_$(call modname, $*)),g' \
+			-e 's,@@CONTAINER@@,$(CONTAINER_$*),g' \
 			-e 's,@@CONFIGURE@@,$(CONFIGURE_$(call modname, $*)),g' \
 			-e 's,@@INSTALL@@,$(INSTALL_$(call modname, $*)),g' \
 			-e 's,@@COPY@@,$(COPY_$(call modname, $*)),g' \
 			> $@
 
 build-%: Dockerfile.%
-	docker pull $(CONTAINER_$(call modname, $*))
+	docker pull $(CONTAINER_$*)
 	docker build --no-cache -t unit:$(VERSION)-$* -f Dockerfile.$* .
 
 tag-%: build-%
