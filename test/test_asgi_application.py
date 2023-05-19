@@ -58,6 +58,15 @@ custom-header: BLAH
         }, 'headers'
         assert resp['body'] == body, 'body'
 
+    def test_asgi_application_ipv6(self, temp_dir):
+        self.load('empty')
+
+        assert 'success' in self.conf(
+            {"[::1]:7080": {"pass": "applications/empty"}}, 'listeners'
+        )
+
+        assert self.get(sock_type='ipv6')['status'] == 200
+
     def test_asgi_application_query_string(self):
         self.load('query_string')
 
