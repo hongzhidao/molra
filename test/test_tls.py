@@ -335,7 +335,7 @@ basicConstraints = critical,CA:TRUE"""
         except ssl.SSLError:
             resp = None
 
-        assert resp == None, 'certificate chain incomplete chain'
+        assert resp is None, 'certificate chain incomplete chain'
 
         # intermediate
 
@@ -600,7 +600,7 @@ basicConstraints = critical,CA:TRUE"""
         except:
             resp = None
 
-        assert resp == None, 'keepalive remove certificate'
+        assert resp is None, 'keepalive remove certificate'
 
     @pytest.mark.skip('not yet')
     def test_tls_certificates_remove_all(self):

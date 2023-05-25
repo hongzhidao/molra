@@ -291,10 +291,10 @@ class TestGoIsolation(TestApplicationGo):
 
         obj = self.getjson(url='/?file=/go/app')['body']
 
-        assert obj['FileExists'] == True, 'app relative to rootfs'
+        assert obj['FileExists'], 'app relative to rootfs'
 
         obj = self.getjson(url='/?file=/bin/sh')['body']
-        assert obj['FileExists'] == False, 'file should not exists'
+        assert not obj['FileExists'], 'file should not exists'
 
     def test_go_isolation_rootfs_container_priv(self, is_su, temp_dir):
         if not is_su:
@@ -312,10 +312,10 @@ class TestGoIsolation(TestApplicationGo):
 
         obj = self.getjson(url='/?file=/go/app')['body']
 
-        assert obj['FileExists'] == True, 'app relative to rootfs'
+        assert obj['FileExists'], 'app relative to rootfs'
 
         obj = self.getjson(url='/?file=/bin/sh')['body']
-        assert obj['FileExists'] == False, 'file should not exists'
+        assert not obj['FileExists'], 'file should not exists'
 
     def test_go_isolation_rootfs_automount_tmpfs(self, is_su, temp_dir):
         try:
