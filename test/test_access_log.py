@@ -307,11 +307,12 @@ Connection: close
             self.wait_for_record(r'^\/bbs ' + str(len(body)) + r'$') is not None
         ), '$body_bytes_sent'
 
-    def test_access_log_incorrect(self, skip_alert):
+    def test_access_log_incorrect(self, skip_alert, temp_dir):
         skip_alert(r'failed to apply new conf')
 
         assert 'error' in self.conf(
-            option.temp_dir + '/blah/access.log' 'access_log/path',
+            f'{temp_dir}/blah/access.log',
+            'access_log/path',
         ), 'access_log path incorrect'
 
         assert 'error' in self.conf(
