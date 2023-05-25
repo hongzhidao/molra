@@ -11,9 +11,10 @@ from unit.option import option
 class TestPythonProcman(TestApplicationPython):
     prerequisites = {'modules': {'python': 'any'}}
 
-    def setup_method(self):
-        self.app_name = "app-" + option.temp_dir.split('/')[-1]
-        self.app_proc = 'applications/' + self.app_name + '/processes'
+    @pytest.fixture(autouse=True)
+    def setup_method_fixture(self, temp_dir):
+        self.app_name = f'app-{temp_dir.split("/")[-1]}'
+        self.app_proc = f'applications/{self.app_name}/processes'
         self.load('empty', self.app_name)
 
     def pids_for_process(self):

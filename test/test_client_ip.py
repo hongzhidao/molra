@@ -1,8 +1,13 @@
+import pytest
 from unit.applications.lang.python import TestApplicationPython
 
 
 class TestClientIP(TestApplicationPython):
     prerequisites = {'modules': {'python': 'any'}}
+
+    @pytest.fixture(autouse=True)
+    def setup_method_fixture(self):
+        self.load('client_ip')
 
     def client_ip(self, options):
         assert 'success' in self.conf(
@@ -23,9 +28,6 @@ class TestClientIP(TestApplicationPython):
             port=port,
             headers={'Connection': 'close', 'X-Forwarded-For': xff},
         )['body']
-
-    def setup_method(self):
-        self.load('client_ip')
 
     def test_client_ip_single_ip(self):
         self.client_ip(

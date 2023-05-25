@@ -9,21 +9,22 @@ from unit.option import option
 class TestJavaIsolationRootfs(TestApplicationJava):
     prerequisites = {'modules': {'java': 'all'}}
 
-    def setup_method(self, is_su):
+    @pytest.fixture(autouse=True)
+    def setup_method_fixture(self, is_su, temp_dir):
         if not is_su:
             return
 
-        os.makedirs(option.temp_dir + '/jars')
-        os.makedirs(option.temp_dir + '/tmp')
-        os.chmod(option.temp_dir + '/tmp', 0o777)
+        os.makedirs(f'{temp_dir}/jars')
+        os.makedirs(f'{temp_dir}/tmp')
+        os.chmod(f'{temp_dir}/tmp', 0o777)
 
         try:
             subprocess.run(
                 [
                     "mount",
                     "--bind",
-                    option.current_dir + "/build",
-                    option.temp_dir + "/jars",
+                    f'{option.current_dir}/build',
+                    f'{temp_dir}/jars',
                 ],
                 stderr=subprocess.STDOUT,
             )
