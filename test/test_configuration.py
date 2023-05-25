@@ -24,7 +24,7 @@ class TestConfiguration(TestControl):
 
     def test_json_unicode(self):
         assert 'success' in self.conf(
-            u"""
+            """
             {
                 "ap\u0070": {
                     "type": "\u0070ython",
@@ -63,7 +63,7 @@ class TestConfiguration(TestControl):
 
     def test_json_unicode_number(self):
         assert 'success' in self.conf(
-            u"""
+            """
             {
                 "app": {
                     "type": "python",
@@ -242,7 +242,7 @@ class TestConfiguration(TestControl):
         )
 
     def test_listeners_port_release(self):
-        for i in range(10):
+        for _ in range(10):
             fail = False
             with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

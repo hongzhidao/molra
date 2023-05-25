@@ -177,7 +177,7 @@ Unexpected prerequisite version "%s" for module "%s" in %s.
                 )
 
 
-def pytest_sessionstart(session):
+def pytest_sessionstart():
     option.available = {'modules': {}, 'features': {}}
 
     unit = unit_run()
@@ -187,7 +187,7 @@ def pytest_sessionstart(session):
 
     # read unit.log
 
-    for i in range(50):
+    for _ in range(50):
         with open(Log.get_path(), 'r') as f:
             log = f.read()
             m = re.search('controller started', log)
@@ -240,7 +240,7 @@ def pytest_sessionstart(session):
 
 
 @pytest.hookimpl(tryfirst=True, hookwrapper=True)
-def pytest_runtest_makereport(item, call):
+def pytest_runtest_makereport(item):
     # execute all other hooks to obtain the report object
     outcome = yield
     rep = outcome.get_result()
@@ -551,7 +551,7 @@ def _clear_temp_dir():
             if os.path.isfile(path) or stat.S_ISSOCK(os.stat(path).st_mode):
                 os.remove(path)
             else:
-                for attempt in range(10):
+                for _ in range(10):
                     try:
                         shutil.rmtree(path)
                         break
@@ -564,7 +564,7 @@ def _clear_temp_dir():
 @print_log_on_assert
 def _check_fds(*, log=None):
     def waitforfds(diff):
-        for i in range(600):
+        for _ in range(600):
             fds_diff = diff()
 
             if fds_diff <= option.fds_threshold:
@@ -691,7 +691,7 @@ def skip_fds_check():
 
 
 @pytest.fixture
-def temp_dir(request):
+def temp_dir():
     return unit_instance['temp_dir']
 
 
@@ -701,16 +701,16 @@ def is_unsafe(request):
 
 
 @pytest.fixture
-def is_su(request):
+def is_su():
     return os.geteuid() == 0
 
 
 @pytest.fixture
-def unit_pid(request):
+def unit_pid():
     return unit_instance['process'].pid
 
 
-def pytest_sessionfinish(session):
+def pytest_sessionfinish():
     if not option.restart and option.save_log:
         print('Path to unit.log:\n' + Log.get_path() + '\n')
 

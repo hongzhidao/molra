@@ -29,7 +29,7 @@ class TestSettings(TestApplicationPython):
         self.load('empty')
 
         def req():
-            (resp, sock) = self.http(
+            (_, sock) = self.http(
                 b"""GET / HTTP/1.1
 """,
                 start=True,
@@ -113,7 +113,7 @@ Connection: close
         self.load('empty')
 
         def req():
-            (resp, sock) = self.http(
+            (_, sock) = self.http(
                 b"""POST / HTTP/1.1
 Host: localhost
 Content-Length: 10
@@ -238,7 +238,7 @@ Connection: close
         self.load('empty')
 
         def req():
-            (resp, sock) = self.get(
+            (_, sock) = self.get(
                 headers={'Host': 'localhost', 'Connection': 'keep-alive'},
                 start=True,
                 read_timeout=1,
