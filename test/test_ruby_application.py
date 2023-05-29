@@ -8,7 +8,7 @@ from unit.applications.lang.ruby import TestApplicationRuby
 class TestRubyApplication(TestApplicationRuby):
     prerequisites = {'modules': {'ruby': 'all'}}
 
-    def test_ruby_application(self):
+    def test_ruby_application(self, date_to_sec_epoch, sec_epoch):
         self.load('variables')
 
         body = 'Test body string.'
@@ -33,9 +33,7 @@ class TestRubyApplication(TestApplicationRuby):
 
         date = headers.pop('Date')
         assert date[-4:] == ' GMT', 'date header timezone'
-        assert (
-            abs(self.date_to_sec_epoch(date) - self.sec_epoch()) < 5
-        ), 'date header'
+        assert abs(date_to_sec_epoch(date) - sec_epoch) < 5, 'date header'
 
         assert headers == {
             'Connection': 'close',
@@ -169,33 +167,31 @@ class TestRubyApplication(TestApplicationRuby):
 
         assert self.get()['status'] == 500, 'syntax error'
 
-    def test_ruby_application_errors_puts(self):
+    def test_ruby_application_errors_puts(self, wait_for_record):
         self.load('errors_puts')
 
         self.get()
 
         assert (
-            self.wait_for_record(r'\[error\].+Error in application')
-            is not None
+            wait_for_record(r'\[error\].+Error in application') is not None
         ), 'errors puts'
 
-    def test_ruby_application_errors_puts_int(self):
+    def test_ruby_application_errors_puts_int(self, wait_for_record):
         self.load('errors_puts_int')
 
         self.get()
 
         assert (
-            self.wait_for_record(r'\[error\].+1234567890') is not None
+            wait_for_record(r'\[error\].+1234567890') is not None
         ), 'errors puts int'
 
-    def test_ruby_application_errors_write(self):
+    def test_ruby_application_errors_write(self, wait_for_record):
         self.load('errors_write')
 
         self.get()
 
         assert (
-            self.wait_for_record(r'\[error\].+Error in application')
-            is not None
+            wait_for_record(r'\[error\].+Error in application') is not None
         ), 'errors write'
 
     def test_ruby_application_errors_write_to_s_custom(self):
@@ -203,16 +199,16 @@ class TestRubyApplication(TestApplicationRuby):
 
         assert self.get()['status'] == 200, 'errors write to_s custom'
 
-    def test_ruby_application_errors_write_int(self):
+    def test_ruby_application_errors_write_int(self, wait_for_record):
         self.load('errors_write_int')
 
         self.get()
 
         assert (
-            self.wait_for_record(r'\[error\].+1234567890') is not None
+            wait_for_record(r'\[error\].+1234567890') is not None
         ), 'errors write int'
 
-    def test_ruby_application_at_exit(self):
+    def test_ruby_application_at_exit(self, wait_for_record):
         self.load('at_exit')
 
         self.get()
@@ -220,7 +216,7 @@ class TestRubyApplication(TestApplicationRuby):
         assert 'success' in self.conf({"listeners": {}, "applications": {}})
 
         assert (
-            self.wait_for_record(r'\[error\].+At exit called\.') is not None
+            wait_for_record(r'\[error\].+At exit called\.') is not None
         ), 'at exit'
 
     def test_ruby_application_encoding(self):
@@ -324,14 +320,13 @@ class TestRubyApplication(TestApplicationRuby):
         assert self.post(body=body)['body'] == body, 'body large'
 
     @pytest.mark.skip('not yet')
-    def test_ruby_application_body_each_error(self):
+    def test_ruby_application_body_each_error(self, wait_for_record):
         self.load('body_each_error')
 
         assert self.get()['status'] == 500, 'body each error status'
 
         assert (
-            self.wait_for_record(r'\[error\].+Failed to run ruby script')
-            is not None
+            wait_for_record(r'\[error\].+Failed to run ruby script') is not None
         ), 'body each error'
 
     def test_ruby_application_body_file(self):

@@ -1,14 +1,24 @@
 import re
 import socket
+import subprocess
 import time
 
 import pytest
 from unit.applications.lang.python import TestApplicationPython
-from unit.utils import sysctl
 
 
 class TestSettings(TestApplicationPython):
     prerequisites = {'modules': {'python': 'any'}}
+
+    def sysctl(self):
+        try:
+            out = subprocess.check_output(
+                ['sysctl', '-a'], stderr=subprocess.STDOUT
+            ).decode()
+        except FileNotFoundError:
+            pytest.skip('requires sysctl')
+
+        return out
 
     def test_settings_server_version(self):
         self.load('empty')
@@ -206,7 +216,7 @@ Connection: close
 
             return data
 
-        sysctl_out = sysctl()
+        sysctl_out = self.sysctl()
         values = re.findall(
             r'net.core.[rw]mem_(?:max|default).*?(\d+)', sysctl_out
         )

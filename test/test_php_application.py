@@ -31,7 +31,7 @@ class TestPHPApplication(TestApplicationPHP):
 
         assert opcache == val, 'opcache value'
 
-    def test_php_application_variables(self):
+    def test_php_application_variables(self, date_to_sec_epoch, sec_epoch):
         self.load('variables')
 
         body = 'Test body string.'
@@ -57,9 +57,7 @@ class TestPHPApplication(TestApplicationPHP):
 
         date = headers.pop('Date')
         assert date[-4:] == ' GMT', 'date header timezone'
-        assert (
-            abs(self.date_to_sec_epoch(date) - self.sec_epoch()) < 5
-        ), 'date header'
+        assert abs(date_to_sec_epoch(date) - sec_epoch) < 5, 'date header'
 
         if 'X-Powered-By' in headers:
             headers.pop('X-Powered-By')
@@ -94,7 +92,7 @@ class TestPHPApplication(TestApplicationPHP):
         assert resp['status'] == 200, 'query string empty status'
         assert resp['headers']['Query-String'] == '', 'query string empty'
 
-    def test_php_application_fastcgi_finish_request(self, unit_pid):
+    def test_php_application_fastcgi_finish_request(self, findall, unit_pid):
         self.load('fastcgi_finish_request')
 
         assert 'success' in self.conf(
@@ -106,11 +104,11 @@ class TestPHPApplication(TestApplicationPHP):
 
         os.kill(unit_pid, signal.SIGUSR1)
 
-        errs = self.findall(r'Error in fastcgi_finish_request')
+        errs = findall(r'Error in fastcgi_finish_request')
 
         assert len(errs) == 0, 'no error'
 
-    def test_php_application_fastcgi_finish_request_2(self, unit_pid):
+    def test_php_application_fastcgi_finish_request_2(self, findall, unit_pid):
         self.load('fastcgi_finish_request')
 
         assert 'success' in self.conf(
@@ -124,7 +122,7 @@ class TestPHPApplication(TestApplicationPHP):
 
         os.kill(unit_pid, signal.SIGUSR1)
 
-        errs = self.findall(r'Error in fastcgi_finish_request')
+        errs = findall(r'Error in fastcgi_finish_request')
 
         assert len(errs) == 0, 'no error'
 
@@ -539,7 +537,7 @@ class TestPHPApplication(TestApplicationPHP):
             r'012345', self.get()['body']
         ), 'disable_classes before'
 
-    def test_php_application_error_log(self):
+    def test_php_application_error_log(self, findall, wait_for_record):
         self.load('error_log')
 
         assert self.get()['status'] == 200, 'status'
@@ -550,9 +548,9 @@ class TestPHPApplication(TestApplicationPHP):
 
         pattern = r'\d{4}\/\d\d\/\d\d\s\d\d:.+\[notice\].+Error in application'
 
-        assert self.wait_for_record(pattern) is not None, 'errors print'
+        assert wait_for_record(pattern) is not None, 'errors print'
 
-        errs = self.findall(pattern)
+        errs = findall(pattern)
 
         assert len(errs) == 2, 'error_log count'
 

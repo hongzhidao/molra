@@ -2,7 +2,6 @@ import fcntl
 import inspect
 import json
 import os
-import platform
 import re
 import shutil
 import signal
@@ -107,9 +106,7 @@ def pytest_configure(config):
     option.current_dir = os.path.abspath(
         os.path.join(os.path.dirname(__file__), os.pardir)
     )
-    option.test_dir = option.current_dir + '/test'
-    option.architecture = platform.architecture()[0]
-    option.system = platform.system()
+    option.test_dir = f'{option.current_dir}/test'
 
     option.cache_dir = tempfile.mkdtemp(prefix='unit-test-cache-')
     public_dir(option.cache_dir)
@@ -175,25 +172,15 @@ def pytest_sessionstart():
         [unit['unitd'], '--version'], stderr=subprocess.STDOUT
     ).decode()
 
-    # read unit.log
-
-    for _ in range(50):
-        with open(Log.get_path(), 'r') as f:
-            log = f.read()
-            m = re.search('controller started', log)
-
-            if m is None:
-                time.sleep(0.1)
-            else:
-                break
-
-    if m is None:
-        Log.print_log(log)
+    if not _wait_for_record(r'controller started'):
+        Log.print_log()
         exit("Unit is writing log too long")
 
     # discover available modules from unit.log
 
-    for module in re.findall(r'module: ([a-zA-Z]+) (.*) ".*"$', log, re.M):
+    for module in re.findall(
+        r'module: ([a-zA-Z]+) (.*) ".*"$', Log.read(), re.M
+    ):
         versions = option.available['modules'].setdefault(module[0], [])
         if module[1] not in versions:
             versions.append(module[1])
@@ -575,6 +562,19 @@ def _count_fds(pid):
     return 0
 
 
+def _wait_for_record(pattern, name='unit.log', wait=150, flags=re.M):
+    with Log.open(name) as file:
+        for _ in range(wait):
+            found = re.search(pattern, file.read(), flags)
+
+            if found is not None:
+                break
+
+            time.sleep(0.1)
+
+    return found
+
+
 def run_process(target, *args):
     global _processes
 
@@ -613,6 +613,61 @@ def find_proc(name, ps_output):
     return re.findall(str(unit_instance['pid']) + r'.*' + name, ps_output)
 
 
+def pytest_sessionfinish():
+    if not option.restart and option.save_log:
+        Log.print_path()
+
+    option.restart = True
+
+    unit_stop()
+
+    public_dir(option.cache_dir)
+    shutil.rmtree(option.cache_dir)
+
+    if not option.save_log and os.path.isdir(option.temp_dir):
+        public_dir(option.temp_dir)
+        shutil.rmtree(option.temp_dir)
+
+
+@pytest.fixture
+def date_to_sec_epoch():
+    def _date_to_sec_epoch(date, template='%a, %d %b %Y %X %Z'):
+        return time.mktime(time.strptime(date, template))
+
+    return _date_to_sec_epoch
+
+
+@pytest.fixture
+def findall():
+    def _findall(pattern, name='unit.log', flags=re.M):
+        return re.findall(pattern, Log.read(name), flags)
+
+    return _findall
+
+
+@pytest.fixture
+def is_su():
+    return option.is_privileged
+
+
+@pytest.fixture
+def is_unsafe(request):
+    return request.config.getoption("--unsafe")
+
+
+@pytest.fixture
+def search_in_file():
+    def _search_in_file(pattern, name='unit.log', flags=re.M):
+        return re.search(pattern, Log.read(name), flags)
+
+    return _search_in_file
+
+
+@pytest.fixture
+def sec_epoch():
+    return time.mktime(time.gmtime())
+
+
 @pytest.fixture()
 def skip_alert():
     def _skip(*alerts):
@@ -631,19 +686,14 @@ def skip_fds_check():
     return _skip
 
 
+@pytest.fixture()
+def system():
+    return option.system
+
+
 @pytest.fixture
 def temp_dir():
     return unit_instance['temp_dir']
-
-
-@pytest.fixture
-def is_unsafe(request):
-    return request.config.getoption("--unsafe")
-
-
-@pytest.fixture
-def is_su():
-    return os.geteuid() == 0
 
 
 @pytest.fixture
@@ -651,17 +701,6 @@ def unit_pid():
     return unit_instance['process'].pid
 
 
-def pytest_sessionfinish():
-    if not option.restart and option.save_log:
-        Log.print_path()
-
-    option.restart = True
-
-    unit_stop()
-
-    public_dir(option.cache_dir)
-    shutil.rmtree(option.cache_dir)
-
-    if not option.save_log and os.path.isdir(option.temp_dir):
-        public_dir(option.temp_dir)
-        shutil.rmtree(option.temp_dir)
+@pytest.fixture
+def wait_for_record():
+    return _wait_for_record
