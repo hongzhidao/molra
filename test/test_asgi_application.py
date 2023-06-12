@@ -5,11 +5,12 @@ from distutils.version import LooseVersion
 import pytest
 from unit.applications.lang.python import TestApplicationPython
 
+prerequisites = {
+    'modules': {'python': lambda v: LooseVersion(v) >= LooseVersion('3.5')}
+}
+
 
 class TestASGIApplication(TestApplicationPython):
-    prerequisites = {
-        'modules': {'python': lambda v: LooseVersion(v) >= LooseVersion('3.5')}
-    }
     load_module = 'asgi'
 
     def test_asgi_application_variables(self, date_to_sec_epoch, sec_epoch):

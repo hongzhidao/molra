@@ -3,14 +3,14 @@ from distutils.version import LooseVersion
 from unit.applications.lang.node import TestApplicationNode
 from unit.applications.websockets import TestApplicationWebsocket
 
+prerequisites = {
+    'modules': {
+        'node': lambda v: LooseVersion(v) >= LooseVersion('14.16.0')
+    }
+}
+
 
 class TestNodeESModules(TestApplicationNode):
-    prerequisites = {
-        'modules': {
-            'node': lambda v:  LooseVersion(v) >= LooseVersion("14.16.0")
-        }
-    }
-
     es_modules = True
     ws = TestApplicationWebsocket()
 

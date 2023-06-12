@@ -5,29 +5,27 @@ from unit.utils import findmnt
 from unit.utils import waitformount
 from unit.utils import waitforunmount
 
+prerequisites = {'modules': {'python': 'any'}, 'features': {'isolation': True}}
+
 
 class TestPythonIsolation(TestApplicationPython):
-    prerequisites = {'modules': {'python': 'any'}, 'features': ['isolation']}
-
-    def test_python_isolation_rootfs(self, is_su, temp_dir):
-        isolation_features = option.available['features']['isolation'].keys()
-
-        if not is_su:
-            if not 'unprivileged_userns_clone' in isolation_features:
-                pytest.skip('requires unprivileged userns or root')
-
-            if 'user' not in isolation_features:
-                pytest.skip('user namespace is not supported')
-
-            if 'mnt' not in isolation_features:
-                pytest.skip('mnt namespace is not supported')
-
-            if 'pid' not in isolation_features:
-                pytest.skip('pid namespace is not supported')
-
+    def test_python_isolation_rootfs(self, is_su, require, temp_dir):
         isolation = {'rootfs': temp_dir}
 
         if not is_su:
+            require(
+                {
+                    'features': {
+                        'isolation': [
+                            'unprivileged_userns_clone',
+                            'user',
+                            'mnt',
+                            'pid',
+                        ]
+                    }
+                }
+            )
+
             isolation['namespaces'] = {
                 'mount': True,
                 'credential': True,
@@ -56,9 +54,8 @@ class TestPythonIsolation(TestApplicationPython):
 
         assert ret['body']['FileExists'], 'application exists in rootfs'
 
-    def test_python_isolation_rootfs_no_language_deps(self, is_su, temp_dir):
-        if not is_su:
-            pytest.skip('requires root')
+    def test_python_isolation_rootfs_no_language_deps(self, require, temp_dir):
+        require({'privileged_user': True})
 
         isolation = {'rootfs': temp_dir, 'automount': {'language_deps': False}}
         self.load('empty', isolation=isolation)
@@ -81,9 +78,8 @@ class TestPythonIsolation(TestApplicationPython):
 
         assert waitforunmount(python_path), 'language_deps unmount'
 
-    def test_python_isolation_procfs(self, is_su, temp_dir):
-        if not is_su:
-            pytest.skip('requires root')
+    def test_python_isolation_procfs(self, require, temp_dir):
+        require({'privileged_user': True})
 
         isolation = {'rootfs': temp_dir, 'automount': {'procfs': False}}
 

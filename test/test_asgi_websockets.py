@@ -6,11 +6,12 @@ import pytest
 from unit.applications.lang.python import TestApplicationPython
 from unit.applications.websockets import TestApplicationWebsocket
 
+prerequisites = {
+    'modules': {'python': lambda v: LooseVersion(v) >= LooseVersion('3.5')}
+}
+
 
 class TestASGIWebsockets(TestApplicationPython):
-    prerequisites = {
-        'modules': {'python': lambda v: LooseVersion(v) >= LooseVersion('3.5')}
-    }
     load_module = 'asgi'
 
     ws = TestApplicationWebsocket()

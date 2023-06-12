@@ -1,10 +1,10 @@
 from unit.applications.lang.php import TestApplicationPHP
 from unit.option import option
 
+prerequisites = {'modules': {'php': 'any'}}
+
 
 class TestPHPTargets(TestApplicationPHP):
-    prerequisites = {'modules': {'php': 'any'}}
-
     def test_php_application_targets(self):
         assert 'success' in self.conf(
             {

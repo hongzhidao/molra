@@ -4,10 +4,10 @@ import pytest
 
 from unit.applications.lang.go import TestApplicationGo
 
+prerequisites = {'modules': {'go': 'all'}}
+
 
 class TestGoApplication(TestApplicationGo):
-    prerequisites = {'modules': {'go': 'all'}}
-
     @pytest.fixture(autouse=True)
     def setup_method_fixture(self, skip_alert):
         skip_alert(r'\[unit\] close\(\d+\) failed: Bad file descriptor')

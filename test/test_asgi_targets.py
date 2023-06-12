@@ -4,11 +4,12 @@ import pytest
 from unit.applications.lang.python import TestApplicationPython
 from unit.option import option
 
+prerequisites = {
+    'modules': {'python': lambda v: LooseVersion(v) >= LooseVersion('3.5')}
+}
+
 
 class TestASGITargets(TestApplicationPython):
-    prerequisites = {
-        'modules': {'python': lambda v: LooseVersion(v) >= LooseVersion('3.5')}
-    }
     load_module = 'asgi'
 
     @pytest.fixture(autouse=True)

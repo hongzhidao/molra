@@ -5,21 +5,18 @@ from pathlib import Path
 import pytest
 from unit.applications.proto import TestApplicationProto
 
+prerequisites = {'features': {'chroot': True}, 'privileged_user': True}
+
 
 class TestStaticMount(TestApplicationProto):
-    prerequisites = {'features': ['chroot']}
-
     @pytest.fixture(autouse=True)
-    def setup_method_fixture(self, is_su, temp_dir):
-        if not is_su:
-            pytest.skip('requires root')
-
-        os.makedirs(temp_dir + '/assets/dir/mount')
-        os.makedirs(temp_dir + '/assets/dir/dir')
-        os.makedirs(temp_dir + '/assets/mount')
-        Path(temp_dir + '/assets/index.html').write_text('index')
-        Path(temp_dir + '/assets/dir/dir/file').write_text('file')
-        Path(temp_dir + '/assets/mount/index.html').write_text('mount')
+    def setup_method_fixture(self, temp_dir):
+        os.makedirs(f'{temp_dir}/assets/dir/mount')
+        os.makedirs(f'{temp_dir}/assets/dir/dir')
+        os.makedirs(f'{temp_dir}/assets/mount')
+        Path(f'{temp_dir}/assets/index.html').write_text('index')
+        Path(f'{temp_dir}/assets/dir/dir/file').write_text('file')
+        Path(f'{temp_dir}/assets/mount/index.html').write_text('mount')
 
         try:
             subprocess.check_output(

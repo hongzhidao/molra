@@ -4,10 +4,10 @@ from pathlib import Path
 import pytest
 from unit.applications.proto import TestApplicationProto
 
+prerequisites = {'features': {'chroot': True}}
+
 
 class TestStaticChroot(TestApplicationProto):
-    prerequisites = {'features': ['chroot']}
-
     @pytest.fixture(autouse=True)
     def setup_method_fixture(self, temp_dir):
         os.makedirs(temp_dir + '/assets/dir')
@@ -61,9 +61,8 @@ class TestStaticChroot(TestApplicationProto):
         )
         assert self.get()['status'] != 200, 'share array bad'
 
-    def test_static_chroot_permission(self, is_su, temp_dir):
-        if is_su:
-            pytest.skip('does\'t work under root')
+    def test_static_chroot_permission(self, require, temp_dir):
+        require({'privileged_user': False})
 
         os.chmod(temp_dir + '/assets/dir', 0o100)
 
@@ -80,9 +79,8 @@ class TestStaticChroot(TestApplicationProto):
         assert 'success' in self.update_action(".$uri", "")
         assert self.get(url=self.test_path)['status'] == 200, 'empty relative'
 
-    def test_static_chroot_relative(self, is_su, temp_dir):
-        if is_su:
-            pytest.skip('does\'t work under root')
+    def test_static_chroot_relative(self, require, temp_dir):
+        require({'privileged_user': False})
 
         assert 'success' in self.update_action(temp_dir + "/assets$uri", ".")
         assert self.get(url='/dir/file')['status'] == 403, 'relative chroot'
