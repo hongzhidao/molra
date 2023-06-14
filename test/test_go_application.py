@@ -2,175 +2,177 @@ import re
 
 import pytest
 
-from unit.applications.lang.go import TestApplicationGo
+from unit.applications.lang.go import ApplicationGo
 
 prerequisites = {'modules': {'go': 'all'}}
 
 
-class TestGoApplication(TestApplicationGo):
-    def test_go_application_variables(self, date_to_sec_epoch, sec_epoch):
-        self.load('variables')
+client = ApplicationGo()
 
-        body = 'Test body string.'
 
-        resp = self.post(
-            headers={
-                'Host': 'localhost',
-                'Content-Type': 'text/html',
-                'Custom-Header': 'blah',
-                'Connection': 'close',
-            },
-            body=body,
-        )
+def test_go_application_variables(date_to_sec_epoch, sec_epoch):
+    client.load('variables')
 
-        assert resp['status'] == 200, 'status'
-        headers = resp['headers']
-        header_server = headers.pop('Server')
-        assert re.search(r'Unit/[\d\.]+', header_server), 'server header'
+    body = 'Test body string.'
 
-        date = headers.pop('Date')
-        assert date[-4:] == ' GMT', 'date header timezone'
-        assert abs(date_to_sec_epoch(date) - sec_epoch) < 5, 'date header'
-
-        assert headers == {
-            'Content-Length': str(len(body)),
+    resp = client.post(
+        headers={
+            'Host': 'localhost',
             'Content-Type': 'text/html',
-            'Request-Method': 'POST',
-            'Request-Uri': '/',
-            'Http-Host': 'localhost',
-            'Server-Protocol': 'HTTP/1.1',
-            'Server-Protocol-Major': '1',
-            'Server-Protocol-Minor': '1',
             'Custom-Header': 'blah',
             'Connection': 'close',
-        }, 'headers'
-        assert resp['body'] == body, 'body'
+        },
+        body=body,
+    )
 
-    def test_go_application_get_variables(self):
-        self.load('get_variables')
+    assert resp['status'] == 200, 'status'
+    headers = resp['headers']
+    header_server = headers.pop('Server')
+    assert re.search(r'Unit/[\d\.]+', header_server), 'server header'
 
-        resp = self.get(url='/?var1=val1&var2=&var3')
-        assert resp['headers']['X-Var-1'] == 'val1', 'GET variables'
-        assert resp['headers']['X-Var-2'] == '', 'GET variables 2'
-        assert resp['headers']['X-Var-3'] == '', 'GET variables 3'
+    date = headers.pop('Date')
+    assert date[-4:] == ' GMT', 'date header timezone'
+    assert abs(date_to_sec_epoch(date) - sec_epoch) < 5, 'date header'
 
-    def test_go_application_post_variables(self):
-        self.load('post_variables')
+    assert headers == {
+        'Content-Length': str(len(body)),
+        'Content-Type': 'text/html',
+        'Request-Method': 'POST',
+        'Request-Uri': '/',
+        'Http-Host': 'localhost',
+        'Server-Protocol': 'HTTP/1.1',
+        'Server-Protocol-Major': '1',
+        'Server-Protocol-Minor': '1',
+        'Custom-Header': 'blah',
+        'Connection': 'close',
+    }, 'headers'
+    assert resp['body'] == body, 'body'
 
-        resp = self.post(
-            headers={
-                'Host': 'localhost',
-                'Content-Type': 'application/x-www-form-urlencoded',
-                'Connection': 'close',
-            },
-            body='var1=val1&var2=&var3',
-        )
+def test_go_application_get_variables():
+    client.load('get_variables')
 
-        assert resp['headers']['X-Var-1'] == 'val1', 'POST variables'
-        assert resp['headers']['X-Var-2'] == '', 'POST variables 2'
-        assert resp['headers']['X-Var-3'] == '', 'POST variables 3'
+    resp = client.get(url='/?var1=val1&var2=&var3')
+    assert resp['headers']['X-Var-1'] == 'val1', 'GET variables'
+    assert resp['headers']['X-Var-2'] == '', 'GET variables 2'
+    assert resp['headers']['X-Var-3'] == '', 'GET variables 3'
 
-    def test_go_application_404(self):
-        self.load('404')
+def test_go_application_post_variables():
+    client.load('post_variables')
 
-        resp = self.get()
+    resp = client.post(
+        headers={
+            'Host': 'localhost',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Connection': 'close',
+        },
+        body='var1=val1&var2=&var3',
+    )
 
-        assert resp['status'] == 404, '404 status'
-        assert re.search(
-            r'<title>404 Not Found</title>', resp['body']
-        ), '404 body'
+    assert resp['headers']['X-Var-1'] == 'val1', 'POST variables'
+    assert resp['headers']['X-Var-2'] == '', 'POST variables 2'
+    assert resp['headers']['X-Var-3'] == '', 'POST variables 3'
 
-    def test_go_keepalive_body(self):
-        self.load('mirror')
+def test_go_application_404():
+    client.load('404')
 
-        assert self.get()['status'] == 200, 'init'
+    resp = client.get()
 
-        body = '0123456789' * 500
-        (resp, sock) = self.post(
-            headers={
-                'Host': 'localhost',
-                'Connection': 'keep-alive',
-                'Content-Type': 'text/html',
-            },
-            start=True,
-            body=body,
-            read_timeout=1,
-        )
+    assert resp['status'] == 404, '404 status'
+    assert re.search(
+        r'<title>404 Not Found</title>', resp['body']
+    ), '404 body'
 
-        assert resp['body'] == body, 'keep-alive 1'
+def test_go_keepalive_body():
+    client.load('mirror')
 
-        body = '0123456789'
-        resp = self.post(
-            headers={
-                'Host': 'localhost',
-                'Content-Type': 'text/html',
-                'Connection': 'close',
-            },
-            sock=sock,
-            body=body,
-        )
+    assert client.get()['status'] == 200, 'init'
 
-        assert resp['body'] == body, 'keep-alive 2'
+    body = '0123456789' * 500
+    (resp, sock) = client.post(
+        headers={
+            'Host': 'localhost',
+            'Connection': 'keep-alive',
+            'Content-Type': 'text/html',
+        },
+        start=True,
+        body=body,
+        read_timeout=1,
+    )
 
-    def test_go_application_cookies(self):
-        self.load('cookies')
+    assert resp['body'] == body, 'keep-alive 1'
 
-        resp = self.get(
-            headers={
-                'Host': 'localhost',
-                'Cookie': 'var1=val1; var2=val2',
-                'Connection': 'close',
-            }
-        )
+    body = '0123456789'
+    resp = client.post(
+        headers={
+            'Host': 'localhost',
+            'Content-Type': 'text/html',
+            'Connection': 'close',
+        },
+        sock=sock,
+        body=body,
+    )
 
-        assert resp['headers']['X-Cookie-1'] == 'val1', 'cookie 1'
-        assert resp['headers']['X-Cookie-2'] == 'val2', 'cookie 2'
+    assert resp['body'] == body, 'keep-alive 2'
 
-    def test_go_application_command_line_arguments_type(self):
-        self.load('command_line_arguments')
+def test_go_application_cookies():
+    client.load('cookies')
 
-        assert 'error' in self.conf(
-            '' "a b c", 'applications/command_line_arguments/arguments'
-        ), 'arguments type'
+    resp = client.get(
+        headers={
+            'Host': 'localhost',
+            'Cookie': 'var1=val1; var2=val2',
+            'Connection': 'close',
+        }
+    )
 
-    def test_go_application_command_line_arguments_0(self):
-        self.load('command_line_arguments')
+    assert resp['headers']['X-Cookie-1'] == 'val1', 'cookie 1'
+    assert resp['headers']['X-Cookie-2'] == 'val2', 'cookie 2'
 
-        assert self.get()['headers']['X-Arg-0'] == self.conf_get(
-            'applications/command_line_arguments/executable'
-        ), 'argument 0'
+def test_go_application_command_line_arguments_type():
+    client.load('command_line_arguments')
 
-    def test_go_application_command_line_arguments(self):
-        self.load('command_line_arguments')
+    assert 'error' in client.conf(
+        '' "a b c", 'applications/command_line_arguments/arguments'
+    ), 'arguments type'
 
-        arg1 = '--cc=gcc-7.2.0'
-        arg2 = '--cc-opt=\'-O0 -DNXT_DEBUG_MEMORY=1 -fsanitize=address\''
-        arg3 = '--debug'
+def test_go_application_command_line_arguments_0():
+    client.load('command_line_arguments')
 
-        assert 'success' in self.conf(
-            '["' + arg1 + '", "' + arg2 + '", "' + arg3 + '"]',
-            'applications/command_line_arguments/arguments',
-        )
+    assert client.get()['headers']['X-Arg-0'] == client.conf_get(
+        'applications/command_line_arguments/executable'
+    ), 'argument 0'
 
-        assert (
-            self.get()['body'] == arg1 + ',' + arg2 + ',' + arg3
-        ), 'arguments'
+def test_go_application_command_line_arguments():
+    client.load('command_line_arguments')
 
-    def test_go_application_command_line_arguments_change(self):
-        self.load('command_line_arguments')
+    arg1 = '--cc=gcc-7.2.0'
+    arg2 = '--cc-opt=\'-O0 -DNXT_DEBUG_MEMORY=1 -fsanitize=address\''
+    arg3 = '--debug'
 
-        args_path = 'applications/command_line_arguments/arguments'
+    assert 'success' in client.conf(
+        '["' + arg1 + '", "' + arg2 + '", "' + arg3 + '"]',
+        'applications/command_line_arguments/arguments',
+    )
 
-        assert 'success' in self.conf('["0", "a", "$", ""]', args_path)
+    assert (
+        client.get()['body'] == arg1 + ',' + arg2 + ',' + arg3
+    ), 'arguments'
 
-        assert self.get()['body'] == '0,a,$,', 'arguments'
+def test_go_application_command_line_arguments_change():
+    client.load('command_line_arguments')
 
-        assert 'success' in self.conf('["-1", "b", "%"]', args_path)
+    args_path = 'applications/command_line_arguments/arguments'
 
-        assert self.get()['body'] == '-1,b,%', 'arguments change'
+    assert 'success' in client.conf('["0", "a", "$", ""]', args_path)
 
-        assert 'success' in self.conf('[]', args_path)
+    assert client.get()['body'] == '0,a,$,', 'arguments'
 
-        assert (
-            self.get()['headers']['Content-Length'] == '0'
-        ), 'arguments empty'
+    assert 'success' in client.conf('["-1", "b", "%"]', args_path)
+
+    assert client.get()['body'] == '-1,b,%', 'arguments change'
+
+    assert 'success' in client.conf('[]', args_path)
+
+    assert (
+        client.get()['headers']['Content-Length'] == '0'
+    ), 'arguments empty'

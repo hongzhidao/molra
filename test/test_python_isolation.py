@@ -1,5 +1,5 @@
 import pytest
-from unit.applications.lang.python import TestApplicationPython
+from unit.applications.lang.python import ApplicationPython
 from unit.option import option
 from unit.utils import findmnt
 from unit.utils import waitformount
@@ -8,91 +8,93 @@ from unit.utils import waitforunmount
 prerequisites = {'modules': {'python': 'any'}, 'features': {'isolation': True}}
 
 
-class TestPythonIsolation(TestApplicationPython):
-    def test_python_isolation_rootfs(self, is_su, require, temp_dir):
-        isolation = {'rootfs': temp_dir}
+client = ApplicationPython()
 
-        if not is_su:
-            require(
-                {
-                    'features': {
-                        'isolation': [
-                            'unprivileged_userns_clone',
-                            'user',
-                            'mnt',
-                            'pid',
-                        ]
-                    }
+
+def test_python_isolation_rootfs(is_su, require, temp_dir):
+    isolation = {'rootfs': temp_dir}
+
+    if not is_su:
+        require(
+            {
+                'features': {
+                    'isolation': [
+                        'unprivileged_userns_clone',
+                        'user',
+                        'mnt',
+                        'pid',
+                    ]
                 }
-            )
-
-            isolation['namespaces'] = {
-                'mount': True,
-                'credential': True,
-                'pid': True,
             }
+        )
 
-        self.load('ns_inspect', isolation=isolation)
+        isolation['namespaces'] = {
+            'mount': True,
+            'credential': True,
+            'pid': True,
+        }
 
-        assert not (
-            self.getjson(url=f'/?path={temp_dir}')['body']['FileExists']
-        ), 'temp_dir does not exists in rootfs'
+    client.load('ns_inspect', isolation=isolation)
 
-        assert self.getjson(url='/?path=/proc/self')['body'][
-            'FileExists'
-        ], 'no /proc/self'
+    assert not (
+        client.getjson(url=f'/?path={temp_dir}')['body']['FileExists']
+    ), 'temp_dir does not exists in rootfs'
 
-        assert not (
-            self.getjson(url='/?path=/dev/pts')['body']['FileExists']
-        ), 'no /dev/pts'
+    assert client.getjson(url='/?path=/proc/self')['body'][
+        'FileExists'
+    ], 'no /proc/self'
 
-        assert not (
-            self.getjson(url='/?path=/sys/kernel')['body']['FileExists']
-        ), 'no /sys/kernel'
+    assert not (
+        client.getjson(url='/?path=/dev/pts')['body']['FileExists']
+    ), 'no /dev/pts'
 
-        ret = self.getjson(url='/?path=/app/python/ns_inspect')
+    assert not (
+        client.getjson(url='/?path=/sys/kernel')['body']['FileExists']
+    ), 'no /sys/kernel'
 
-        assert ret['body']['FileExists'], 'application exists in rootfs'
+    ret = client.getjson(url='/?path=/app/python/ns_inspect')
 
-    def test_python_isolation_rootfs_no_language_deps(self, require, temp_dir):
-        require({'privileged_user': True})
+    assert ret['body']['FileExists'], 'application exists in rootfs'
 
-        isolation = {'rootfs': temp_dir, 'automount': {'language_deps': False}}
-        self.load('empty', isolation=isolation)
+def test_python_isolation_rootfs_no_language_deps(require, temp_dir):
+    require({'privileged_user': True})
 
-        python_path = temp_dir + '/usr'
+    isolation = {'rootfs': temp_dir, 'automount': {'language_deps': False}}
+    client.load('empty', isolation=isolation)
 
-        assert findmnt().find(python_path) == -1
-        assert self.get()['status'] != 200, 'disabled language_deps'
-        assert findmnt().find(python_path) == -1
+    python_path = temp_dir + '/usr'
 
-        isolation['automount']['language_deps'] = True
+    assert findmnt().find(python_path) == -1
+    assert client.get()['status'] != 200, 'disabled language_deps'
+    assert findmnt().find(python_path) == -1
 
-        self.load('empty', isolation=isolation)
+    isolation['automount']['language_deps'] = True
 
-        assert findmnt().find(python_path) == -1
-        assert self.get()['status'] == 200, 'enabled language_deps'
-        assert waitformount(python_path), 'language_deps mount'
+    client.load('empty', isolation=isolation)
 
-        self.conf({"listeners": {}, "applications": {}})
+    assert findmnt().find(python_path) == -1
+    assert client.get()['status'] == 200, 'enabled language_deps'
+    assert waitformount(python_path), 'language_deps mount'
 
-        assert waitforunmount(python_path), 'language_deps unmount'
+    client.conf({"listeners": {}, "applications": {}})
 
-    def test_python_isolation_procfs(self, require, temp_dir):
-        require({'privileged_user': True})
+    assert waitforunmount(python_path), 'language_deps unmount'
 
-        isolation = {'rootfs': temp_dir, 'automount': {'procfs': False}}
+def test_python_isolation_procfs(require, temp_dir):
+    require({'privileged_user': True})
 
-        self.load('ns_inspect', isolation=isolation)
+    isolation = {'rootfs': temp_dir, 'automount': {'procfs': False}}
 
-        assert not (
-            self.getjson(url='/?path=/proc/self')['body']['FileExists']
-        ), 'no /proc/self'
+    client.load('ns_inspect', isolation=isolation)
 
-        isolation['automount']['procfs'] = True
+    assert not (
+        client.getjson(url='/?path=/proc/self')['body']['FileExists']
+    ), 'no /proc/self'
 
-        self.load('ns_inspect', isolation=isolation)
+    isolation['automount']['procfs'] = True
 
-        assert self.getjson(url='/?path=/proc/self')['body'][
-            'FileExists'
-        ], '/proc/self'
+    client.load('ns_inspect', isolation=isolation)
+
+    assert client.getjson(url='/?path=/proc/self')['body'][
+        'FileExists'
+    ], '/proc/self'

@@ -4,282 +4,284 @@ import subprocess
 import time
 
 import pytest
-from unit.applications.lang.python import TestApplicationPython
+from unit.applications.lang.python import ApplicationPython
 from unit.option import option
 
 prerequisites = {'modules': {'python': 'any'}}
 
 
-class TestPythonProcman(TestApplicationPython):
-    @pytest.fixture(autouse=True)
-    def setup_method_fixture(self, temp_dir):
-        self.app_name = f'app-{temp_dir.split("/")[-1]}'
-        self.app_proc = f'applications/{self.app_name}/processes'
-        self.load('empty', self.app_name)
+client = ApplicationPython()
 
-    def pids_for_process(self):
-        time.sleep(0.2)
 
-        output = subprocess.check_output(['ps', 'ax'])
+@pytest.fixture(autouse=True)
+def setup_method_fixture(temp_dir):
+    client.app_name = f'app-{temp_dir.split("/")[-1]}'
+    client.app_proc = f'applications/{client.app_name}/processes'
+    client.load('empty', client.app_name)
 
-        pids = set()
-        for m in re.findall(
-            '.*unit: "' + self.app_name + '" application', output.decode()
-        ):
-            pids.add(re.search(r'^\s*(\d+)', m).group(1))
+def pids_for_process():
+    time.sleep(0.2)
 
-        return pids
+    output = subprocess.check_output(['ps', 'ax'])
 
-    def conf_proc(self, conf, path=None):
-        if path is None:
-            path = self.app_proc
+    pids = set()
+    for m in re.findall(
+        '.*unit: "' + client.app_name + '" application', output.decode()
+    ):
+        pids.add(re.search(r'^\s*(\d+)', m).group(1))
 
-        assert 'success' in self.conf(conf, path), 'configure processes'
+    return pids
 
-    @pytest.mark.skip('not yet')
-    def test_python_processes_idle_timeout_zero(self):
-        self.conf_proc({"spare": 0, "max": 2, "idle_timeout": 0})
+def conf_proc(conf, path=None):
+    if path is None:
+        path = client.app_proc
 
-        self.get()
-        assert len(self.pids_for_process()) == 0, 'idle timeout 0'
+    assert 'success' in client.conf(conf, path), 'configure processes'
 
-    def test_python_prefork(self):
-        self.conf_proc('2')
+@pytest.mark.skip('not yet')
+def test_python_processes_idle_timeout_zero():
+    conf_proc({"spare": 0, "max": 2, "idle_timeout": 0})
 
-        pids = self.pids_for_process()
-        assert len(pids) == 2, 'prefork 2'
+    client.get()
+    assert len(pids_for_process()) == 0, 'idle timeout 0'
 
-        self.get()
-        assert self.pids_for_process() == pids, 'prefork still 2'
+def test_python_prefork():
+    conf_proc('2')
 
-        self.conf_proc('4')
+    pids = pids_for_process()
+    assert len(pids) == 2, 'prefork 2'
 
-        pids = self.pids_for_process()
-        assert len(pids) == 4, 'prefork 4'
+    client.get()
+    assert pids_for_process() == pids, 'prefork still 2'
 
-        self.get()
-        assert self.pids_for_process() == pids, 'prefork still 4'
+    conf_proc('4')
 
-        self.stop_all()
+    pids = pids_for_process()
+    assert len(pids) == 4, 'prefork 4'
 
-    @pytest.mark.skip('not yet')
-    def test_python_prefork_same_processes(self):
-        self.conf_proc('2')
-        pids = self.pids_for_process()
+    client.get()
+    assert pids_for_process() == pids, 'prefork still 4'
 
-        self.conf_proc('4')
-        pids_new = self.pids_for_process()
+    stop_all()
 
-        assert pids.issubset(pids_new), 'prefork same processes'
+@pytest.mark.skip('not yet')
+def test_python_prefork_same_processes():
+    conf_proc('2')
+    pids = pids_for_process()
 
-    def test_python_ondemand(self):
-        self.conf_proc({"spare": 0, "max": 8, "idle_timeout": 1})
+    conf_proc('4')
+    pids_new = pids_for_process()
 
-        assert len(self.pids_for_process()) == 0, 'on-demand 0'
+    assert pids.issubset(pids_new), 'prefork same processes'
 
-        self.get()
-        pids = self.pids_for_process()
-        assert len(pids) == 1, 'on-demand 1'
+def test_python_ondemand():
+    conf_proc({"spare": 0, "max": 8, "idle_timeout": 1})
 
-        self.get()
-        assert self.pids_for_process() == pids, 'on-demand still 1'
+    assert len(pids_for_process()) == 0, 'on-demand 0'
 
-        time.sleep(1)
+    client.get()
+    pids = pids_for_process()
+    assert len(pids) == 1, 'on-demand 1'
 
-        assert len(self.pids_for_process()) == 0, 'on-demand stop idle'
+    client.get()
+    assert pids_for_process() == pids, 'on-demand still 1'
 
-        self.stop_all()
+    time.sleep(1)
 
-    def test_python_scale_updown(self):
-        self.conf_proc({"spare": 2, "max": 8, "idle_timeout": 1})
+    assert len(pids_for_process()) == 0, 'on-demand stop idle'
 
-        pids = self.pids_for_process()
-        assert len(pids) == 2, 'updown 2'
+    stop_all()
 
-        self.get()
-        pids_new = self.pids_for_process()
-        assert len(pids_new) == 3, 'updown 3'
-        assert pids.issubset(pids_new), 'updown 3 only 1 new'
+def test_python_scale_updown():
+    conf_proc({"spare": 2, "max": 8, "idle_timeout": 1})
 
-        self.get()
-        assert self.pids_for_process() == pids_new, 'updown still 3'
+    pids = pids_for_process()
+    assert len(pids) == 2, 'updown 2'
 
-        time.sleep(1)
+    client.get()
+    pids_new = pids_for_process()
+    assert len(pids_new) == 3, 'updown 3'
+    assert pids.issubset(pids_new), 'updown 3 only 1 new'
 
-        pids = self.pids_for_process()
-        assert len(pids) == 2, 'updown stop idle'
+    client.get()
+    assert pids_for_process() == pids_new, 'updown still 3'
 
-        self.get()
-        pids_new = self.pids_for_process()
-        assert len(pids_new) == 3, 'updown again 3'
-        assert pids.issubset(pids_new), 'updown again 3 only 1 new'
+    time.sleep(1)
 
-        self.stop_all()
+    pids = pids_for_process()
+    assert len(pids) == 2, 'updown stop idle'
 
-    def test_python_reconfigure(self):
-        self.conf_proc({"spare": 2, "max": 6, "idle_timeout": 1})
+    client.get()
+    pids_new = pids_for_process()
+    assert len(pids_new) == 3, 'updown again 3'
+    assert pids.issubset(pids_new), 'updown again 3 only 1 new'
 
-        pids = self.pids_for_process()
-        assert len(pids) == 2, 'reconf 2'
+    stop_all()
 
-        self.get()
-        pids_new = self.pids_for_process()
-        assert len(pids_new) == 3, 'reconf 3'
-        assert pids.issubset(pids_new), 'reconf 3 only 1 new'
+def test_python_reconfigure():
+    conf_proc({"spare": 2, "max": 6, "idle_timeout": 1})
 
-        self.conf_proc('6', self.app_proc + '/spare')
+    pids = pids_for_process()
+    assert len(pids) == 2, 'reconf 2'
 
-        pids = self.pids_for_process()
-        assert len(pids) == 6, 'reconf 6'
+    client.get()
+    pids_new = pids_for_process()
+    assert len(pids_new) == 3, 'reconf 3'
+    assert pids.issubset(pids_new), 'reconf 3 only 1 new'
 
-        self.get()
-        assert self.pids_for_process() == pids, 'reconf still 6'
+    conf_proc('6', client.app_proc + '/spare')
 
-        self.stop_all()
+    pids = pids_for_process()
+    assert len(pids) == 6, 'reconf 6'
 
-    def test_python_idle_timeout(self):
-        self.conf_proc({"spare": 0, "max": 6, "idle_timeout": 2})
+    client.get()
+    assert pids_for_process() == pids, 'reconf still 6'
 
-        self.get()
-        pids = self.pids_for_process()
-        assert len(pids) == 1, 'idle timeout 1'
+    stop_all()
 
-        time.sleep(1)
+def test_python_idle_timeout():
+    conf_proc({"spare": 0, "max": 6, "idle_timeout": 2})
 
-        self.get()
+    client.get()
+    pids = pids_for_process()
+    assert len(pids) == 1, 'idle timeout 1'
 
-        time.sleep(1)
+    time.sleep(1)
 
-        pids_new = self.pids_for_process()
-        assert len(pids_new) == 1, 'idle timeout still 1'
-        assert self.pids_for_process() == pids, 'idle timeout still 1 same pid'
+    client.get()
 
-        time.sleep(1)
+    time.sleep(1)
 
-        assert len(self.pids_for_process()) == 0, 'idle timed out'
+    pids_new = pids_for_process()
+    assert len(pids_new) == 1, 'idle timeout still 1'
+    assert pids_for_process() == pids, 'idle timeout still 1 same pid'
 
-    def test_python_processes_connection_keepalive(self):
-        self.conf_proc({"spare": 0, "max": 6, "idle_timeout": 2})
+    time.sleep(1)
 
-        (_, sock) = self.get(
-            headers={'Host': 'localhost', 'Connection': 'keep-alive'},
-            start=True,
-            read_timeout=1,
-        )
-        assert len(self.pids_for_process()) == 1, 'keepalive connection 1'
+    assert len(pids_for_process()) == 0, 'idle timed out'
 
-        time.sleep(2)
+def test_python_processes_connection_keepalive():
+    conf_proc({"spare": 0, "max": 6, "idle_timeout": 2})
 
-        assert len(self.pids_for_process()) == 0, 'keepalive connection 0'
+    (_, sock) = client.get(
+        headers={'Host': 'localhost', 'Connection': 'keep-alive'},
+        start=True,
+        read_timeout=1,
+    )
+    assert len(pids_for_process()) == 1, 'keepalive connection 1'
 
-        sock.close()
+    time.sleep(2)
 
-    def test_python_processes_access(self):
-        self.conf_proc('1')
+    assert len(pids_for_process()) == 0, 'keepalive connection 0'
 
-        path = '/' + self.app_proc
-        assert 'error' in self.conf_get(path + '/max')
-        assert 'error' in self.conf_get(path + '/spare')
-        assert 'error' in self.conf_get(path + '/idle_timeout')
+    sock.close()
 
-    def test_python_processes_invalid(self):
-        assert 'error' in self.conf(
-            {"spare": -1}, self.app_proc
-        ), 'negative spare'
-        assert 'error' in self.conf({"max": -1}, self.app_proc), 'negative max'
-        assert 'error' in self.conf(
-            {"idle_timeout": -1}, self.app_proc
-        ), 'negative idle_timeout'
-        assert 'error' in self.conf(
-            {"spare": 2}, self.app_proc
-        ), 'spare gt max default'
-        assert 'error' in self.conf(
-            {"spare": 2, "max": 1}, self.app_proc
-        ), 'spare gt max'
-        assert 'error' in self.conf(
-            {"spare": 0, "max": 0}, self.app_proc
-        ), 'max zero'
+def test_python_processes_access():
+    conf_proc('1')
 
-    def stop_all(self):
-        assert 'success' in self.conf({"listeners": {}, "applications": {}})
+    path = '/' + client.app_proc
+    assert 'error' in client.conf_get(path + '/max')
+    assert 'error' in client.conf_get(path + '/spare')
+    assert 'error' in client.conf_get(path + '/idle_timeout')
 
-        assert len(self.pids_for_process()) == 0, 'stop all'
+def test_python_processes_invalid():
+    assert 'error' in client.conf(
+        {"spare": -1}, client.app_proc
+    ), 'negative spare'
+    assert 'error' in client.conf({"max": -1}, client.app_proc), 'negative max'
+    assert 'error' in client.conf(
+        {"idle_timeout": -1}, client.app_proc
+    ), 'negative idle_timeout'
+    assert 'error' in client.conf(
+        {"spare": 2}, client.app_proc
+    ), 'spare gt max default'
+    assert 'error' in client.conf(
+        {"spare": 2, "max": 1}, client.app_proc
+    ), 'spare gt max'
+    assert 'error' in client.conf(
+        {"spare": 0, "max": 0}, client.app_proc
+    ), 'max zero'
 
-    def test_python_restart(self, temp_dir):
-        shutil.copyfile(
-            option.test_dir + '/python/restart/v1.py', temp_dir + '/wsgi.py'
-        )
+def stop_all():
+    assert 'success' in client.conf({"listeners": {}, "applications": {}})
 
-        self.load(
-            temp_dir,
-            name=self.app_name,
-            processes=1,
-            environment={'PYTHONDONTWRITEBYTECODE': '1'},
-        )
+    assert len(pids_for_process()) == 0, 'stop all'
 
-        b = self.get()['body']
-        assert b == "v1", 'process started'
+def test_python_restart(temp_dir):
+    shutil.copyfile(
+        option.test_dir + '/python/restart/v1.py', temp_dir + '/wsgi.py'
+    )
 
-        shutil.copyfile(
-            option.test_dir + '/python/restart/v2.py', temp_dir + '/wsgi.py'
-        )
+    client.load(
+        temp_dir,
+        name=client.app_name,
+        processes=1,
+        environment={'PYTHONDONTWRITEBYTECODE': '1'},
+    )
 
-        b = self.get()['body']
-        assert b == "v1", 'still old process'
+    b = client.get()['body']
+    assert b == "v1", 'process started'
 
-        assert 'success' in self.conf_get(
-            '/control/applications/' + self.app_name + '/restart'
-        ), 'restart processes'
+    shutil.copyfile(
+        option.test_dir + '/python/restart/v2.py', temp_dir + '/wsgi.py'
+    )
 
-        b = self.get()['body']
-        assert b == "v2", 'new process started'
+    b = client.get()['body']
+    assert b == "v1", 'still old process'
 
-        assert 'error' in self.conf_get(
-            '/control/applications/blah/restart'
-        ), 'application incorrect'
+    assert 'success' in client.conf_get(
+        '/control/applications/' + client.app_name + '/restart'
+    ), 'restart processes'
 
-        assert 'error' in self.conf_delete(
-            '/control/applications/' + self.app_name + '/restart'
-        ), 'method incorrect'
+    b = client.get()['body']
+    assert b == "v2", 'new process started'
 
-    def test_python_restart_multi(self):
-        self.conf_proc('2')
+    assert 'error' in client.conf_get(
+        '/control/applications/blah/restart'
+    ), 'application incorrect'
 
-        pids = self.pids_for_process()
-        assert len(pids) == 2, 'restart 2 started'
+    assert 'error' in client.conf_delete(
+        '/control/applications/' + client.app_name + '/restart'
+    ), 'method incorrect'
 
-        assert 'success' in self.conf_get(
-            '/control/applications/' + self.app_name + '/restart'
-        ), 'restart processes'
+def test_python_restart_multi():
+    conf_proc('2')
 
-        new_pids = self.pids_for_process()
-        assert len(new_pids) == 2, 'restart still 2'
+    pids = pids_for_process()
+    assert len(pids) == 2, 'restart 2 started'
 
-        assert len(new_pids.intersection(pids)) == 0, 'restart all new'
+    assert 'success' in client.conf_get(
+        '/control/applications/' + client.app_name + '/restart'
+    ), 'restart processes'
 
-    def test_python_restart_longstart(self):
-        self.load(
-            'restart',
-            name=self.app_name,
-            module="longstart",
-            processes={"spare": 1, "max": 2, "idle_timeout": 5},
-        )
+    new_pids = pids_for_process()
+    assert len(new_pids) == 2, 'restart still 2'
 
-        assert len(self.pids_for_process()) == 1, 'longstarts == 1'
+    assert len(new_pids.intersection(pids)) == 0, 'restart all new'
 
-        self.get()
+def test_python_restart_longstart():
+    client.load(
+        'restart',
+        name=client.app_name,
+        module="longstart",
+        processes={"spare": 1, "max": 2, "idle_timeout": 5},
+    )
 
-        pids = self.pids_for_process()
-        assert len(pids) == 2, 'longstarts == 2'
+    assert len(pids_for_process()) == 1, 'longstarts == 1'
 
-        assert 'success' in self.conf_get(
-            '/control/applications/' + self.app_name + '/restart'
-        ), 'restart processes'
+    client.get()
 
-        # wait for longstarted app
-        time.sleep(2)
+    pids = pids_for_process()
+    assert len(pids) == 2, 'longstarts == 2'
 
-        new_pids = self.pids_for_process()
-        assert len(new_pids) == 1, 'restart 1'
+    assert 'success' in client.conf_get(
+        '/control/applications/' + client.app_name + '/restart'
+    ), 'restart processes'
 
-        assert len(new_pids.intersection(pids)) == 0, 'restart all new'
+    # wait for longstarted app
+    time.sleep(2)
+
+    new_pids = pids_for_process()
+    assert len(new_pids) == 1, 'restart 1'
+
+    assert len(new_pids.intersection(pids)) == 0, 'restart all new'

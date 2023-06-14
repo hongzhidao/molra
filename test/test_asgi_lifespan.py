@@ -2,7 +2,7 @@ import os
 from distutils.version import LooseVersion
 
 from conftest import unit_stop
-from unit.applications.lang.python import TestApplicationPython
+from unit.applications.lang.python import ApplicationPython
 from unit.option import option
 
 prerequisites = {
@@ -10,113 +10,115 @@ prerequisites = {
 }
 
 
-class TestASGILifespan(TestApplicationPython):
-    load_module = 'asgi'
+client = ApplicationPython()
 
-    def setup_cookies(self, prefix):
-        base_dir = option.test_dir + '/python/lifespan/empty'
 
-        os.chmod(base_dir, 0o777)
+load_module = 'asgi'
 
-        for name in ['startup', 'shutdown', 'version']:
-            path = option.test_dir + '/python/lifespan/empty/' + prefix + name
-            open(path, 'a').close()
-            os.chmod(path, 0o777)
+def setup_cookies(prefix):
+    base_dir = option.test_dir + '/python/lifespan/empty'
 
-    def assert_cookies(self, prefix):
-        for name in ['startup', 'shutdown']:
-            path = option.test_dir + '/python/lifespan/empty/' + prefix + name
-            exists = os.path.isfile(path)
-            if exists:
-                os.remove(path)
+    os.chmod(base_dir, 0o777)
 
-            assert not exists, name
+    for name in ['startup', 'shutdown', 'version']:
+        path = option.test_dir + '/python/lifespan/empty/' + prefix + name
+        open(path, 'a').close()
+        os.chmod(path, 0o777)
 
-        path = option.test_dir + '/python/lifespan/empty/' + prefix + 'version'
+def assert_cookies(prefix):
+    for name in ['startup', 'shutdown']:
+        path = option.test_dir + '/python/lifespan/empty/' + prefix + name
+        exists = os.path.isfile(path)
+        if exists:
+            os.remove(path)
 
-        with open(path, 'r') as f:
-            version = f.read()
+        assert not exists, name
 
-        os.remove(path)
+    path = option.test_dir + '/python/lifespan/empty/' + prefix + 'version'
 
-        assert version == '3.0 2.0', 'version'
+    with open(path, 'r') as f:
+        version = f.read()
 
-    def test_asgi_lifespan(self):
-        self.load('lifespan/empty')
+    os.remove(path)
 
-        self.setup_cookies('')
+    assert version == '3.0 2.0', 'version'
 
-        assert self.get()['status'] == 204
+def test_asgi_lifespan():
+    client.load('lifespan/empty')
 
-        unit_stop()
+    setup_cookies('')
 
-        self.assert_cookies('')
+    assert client.get()['status'] == 204
 
-    def test_asgi_lifespan_targets(self):
-        assert 'success' in self.conf(
-            {
-                "listeners": {"*:7080": {"pass": "routes"}},
-                "routes": [
-                    {
-                        "match": {"uri": "/1"},
-                        "action": {"pass": "applications/targets/1"},
-                    },
-                    {
-                        "match": {"uri": "/2"},
-                        "action": {"pass": "applications/targets/2"},
-                    },
-                ],
-                "applications": {
-                    "targets": {
-                        "type": "python",
-                        "processes": {"spare": 0},
-                        "working_directory": option.test_dir
-                        + "/python/lifespan/empty",
-                        "path": option.test_dir + '/python/lifespan/empty',
-                        "targets": {
-                            "1": {"module": "asgi", "callable": "application"},
-                            "2": {
-                                "module": "asgi",
-                                "callable": "application2",
-                            },
-                        },
-                    }
+    unit_stop()
+
+    assert_cookies('')
+
+def test_asgi_lifespan_targets():
+    assert 'success' in client.conf(
+        {
+            "listeners": {"*:7080": {"pass": "routes"}},
+            "routes": [
+                {
+                    "match": {"uri": "/1"},
+                    "action": {"pass": "applications/targets/1"},
                 },
-            }
-        )
+                {
+                    "match": {"uri": "/2"},
+                    "action": {"pass": "applications/targets/2"},
+                },
+            ],
+            "applications": {
+                "targets": {
+                    "type": "python",
+                    "processes": {"spare": 0},
+                    "working_directory": option.test_dir
+                    + "/python/lifespan/empty",
+                    "path": option.test_dir + '/python/lifespan/empty',
+                    "targets": {
+                        "1": {"module": "asgi", "callable": "application"},
+                        "2": {
+                            "module": "asgi",
+                            "callable": "application2",
+                        },
+                    },
+                }
+            },
+        }
+    )
 
-        self.setup_cookies('')
-        self.setup_cookies('app2_')
+    setup_cookies('')
+    setup_cookies('app2_')
 
-        assert self.get(url="/1")['status'] == 204
-        assert self.get(url="/2")['status'] == 204
+    assert client.get(url="/1")['status'] == 204
+    assert client.get(url="/2")['status'] == 204
 
-        unit_stop()
+    unit_stop()
 
-        self.assert_cookies('')
-        self.assert_cookies('app2_')
+    assert_cookies('')
+    assert_cookies('app2_')
 
-    def test_asgi_lifespan_failed(self, wait_for_record):
-        self.load('lifespan/failed')
+def test_asgi_lifespan_failed(wait_for_record):
+    client.load('lifespan/failed')
 
-        assert self.get()['status'] == 503
+    assert client.get()['status'] == 503
 
-        assert (
-            wait_for_record(r'\[error\].*Application startup failed')
-            is not None
-        ), 'error message'
-        assert wait_for_record(r'Exception blah') is not None, 'exception'
+    assert (
+        wait_for_record(r'\[error\].*Application startup failed')
+        is not None
+    ), 'error message'
+    assert wait_for_record(r'Exception blah') is not None, 'exception'
 
-    def test_asgi_lifespan_error(self, wait_for_record):
-        self.load('lifespan/error')
+def test_asgi_lifespan_error(wait_for_record):
+    client.load('lifespan/error')
 
-        self.get()
+    client.get()
 
-        assert wait_for_record(r'Exception blah') is not None, 'exception'
+    assert wait_for_record(r'Exception blah') is not None, 'exception'
 
-    def test_asgi_lifespan_error_auto(self, wait_for_record):
-        self.load('lifespan/error_auto')
+def test_asgi_lifespan_error_auto(wait_for_record):
+    client.load('lifespan/error_auto')
 
-        self.get()
+    client.get()
 
-        assert wait_for_record(r'AssertionError') is not None, 'assertion'
+    assert wait_for_record(r'AssertionError') is not None, 'assertion'

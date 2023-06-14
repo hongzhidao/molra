@@ -1,7 +1,7 @@
 from distutils.version import LooseVersion
 
-from unit.applications.lang.node import TestApplicationNode
-from unit.applications.websockets import TestApplicationWebsocket
+from unit.applications.lang.node import ApplicationNode
+from unit.applications.websockets import ApplicationWebsocket
 
 prerequisites = {
     'modules': {
@@ -10,40 +10,42 @@ prerequisites = {
 }
 
 
-class TestNodeESModules(TestApplicationNode):
-    es_modules = True
-    ws = TestApplicationWebsocket()
+client = ApplicationNode()
 
-    def assert_basic_application(self):
-        resp = self.get()
-        assert resp['headers']['Content-Type'] == 'text/plain', 'basic header'
-        assert resp['body'] == 'Hello World\n', 'basic body'
 
-    def test_node_es_modules_loader_http(self):
-        self.load('loader/es_modules_http', name="app.mjs")
+es_modules = True
+ws = ApplicationWebsocket()
 
-        self.assert_basic_application()
+def assert_basic_application():
+    resp = client.get()
+    assert resp['headers']['Content-Type'] == 'text/plain', 'basic header'
+    assert resp['body'] == 'Hello World\n', 'basic body'
 
-    def test_node_es_modules_loader_http_indirect(self):
-        self.load('loader/es_modules_http_indirect', name="app.js")
+def test_node_es_modules_loader_http():
+    client.load('loader/es_modules_http', name="app.mjs")
 
-        self.assert_basic_application()
+    assert_basic_application()
 
-    def test_node_es_modules_loader_websockets(self):
-        self.load('loader/es_modules_websocket', name="app.mjs")
+def test_node_es_modules_loader_http_indirect():
+    client.load('loader/es_modules_http_indirect', name="app.js")
 
-        message = 'blah'
+    assert_basic_application()
 
-        _, sock, _ = self.ws.upgrade()
+def test_node_es_modules_loader_websockets():
+    client.load('loader/es_modules_websocket', name="app.mjs")
 
-        self.ws.frame_write(sock, self.ws.OP_TEXT, message)
-        frame = self.ws.frame_read(sock)
+    message = 'blah'
 
-        assert message == frame['data'].decode('utf-8'), 'mirror'
+    _, sock, _ = ws.upgrade()
 
-        self.ws.frame_write(sock, self.ws.OP_TEXT, message)
-        frame = self.ws.frame_read(sock)
+    ws.frame_write(sock, ws.OP_TEXT, message)
+    frame = ws.frame_read(sock)
 
-        assert message == frame['data'].decode('utf-8'), 'mirror 2'
+    assert message == frame['data'].decode('utf-8'), 'mirror'
 
-        sock.close()
+    ws.frame_write(sock, ws.OP_TEXT, message)
+    frame = ws.frame_read(sock)
+
+    assert message == frame['data'].decode('utf-8'), 'mirror 2'
+
+    sock.close()

@@ -1,12 +1,13 @@
 import os
 import subprocess
 
-from unit.applications.proto import TestApplicationProto
+from unit.applications.proto import ApplicationProto
 from unit.option import option
 
 
-class TestApplicationGo(TestApplicationProto):
-    def prepare_env(self, script, name, static=False):
+class ApplicationGo(ApplicationProto):
+    @staticmethod
+    def prepare_env(script, name='app', static=False):
         try:
             subprocess.check_output(['which', 'go'])
         except subprocess.CalledProcessError:
@@ -66,7 +67,7 @@ class TestApplicationGo(TestApplicationProto):
             executable = "/go/" + name
             static_build = True
 
-        self.prepare_env(script, name, static=static_build)
+        ApplicationGo.prepare_env(script, name, static=static_build)
 
         conf = {
             "listeners": {"*:7080": {"pass": "applications/" + script}},

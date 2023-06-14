@@ -1,160 +1,162 @@
 import os
 
 import pytest
-from unit.applications.proto import TestApplicationProto
+from unit.applications.proto import ApplicationProto
 
 
-class TestRewrite(TestApplicationProto):
-    @pytest.fixture(autouse=True)
-    def setup_method_fixture(self):
-        assert 'success' in self.conf(
+client = ApplicationProto()
+
+
+@pytest.fixture(autouse=True)
+def setup_method_fixture():
+    assert 'success' in client.conf(
+        {
+            "listeners": {"*:7080": {"pass": "routes"}},
+            "routes": [
+                {
+                    "match": {"uri": "/"},
+                    "action": {"rewrite": "/new", "pass": "routes"},
+                },
+                {"match": {"uri": "/new"}, "action": {"return": 200}},
+            ],
+            "applications": {},
+        },
+    ), 'set initial configuration'
+
+def set_rewrite(rewrite, uri):
+    assert 'success' in client.conf(
+        [
             {
-                "listeners": {"*:7080": {"pass": "routes"}},
-                "routes": [
-                    {
-                        "match": {"uri": "/"},
-                        "action": {"rewrite": "/new", "pass": "routes"},
-                    },
-                    {"match": {"uri": "/new"}, "action": {"return": 200}},
-                ],
-                "applications": {},
+                "match": {"uri": "/"},
+                "action": {"rewrite": rewrite, "pass": "routes"},
             },
-        ), 'set initial configuration'
+            {"match": {"uri": uri}, "action": {"return": 200}},
+        ],
+        'routes',
+    )
 
-    def set_rewrite(self, rewrite, uri):
-        assert 'success' in self.conf(
+def test_rewrite():
+    assert client.get()['status'] == 200
+
+    set_rewrite("", "")
+    assert client.get()['status'] == 200
+
+def test_rewrite_variable():
+    set_rewrite("/$host", "/localhost")
+    assert client.get()['status'] == 200
+
+    set_rewrite("${uri}a", "/a")
+    assert client.get()['status'] == 200
+
+def test_rewrite_arguments():
+    assert 'success' in client.conf(
+        [
+            {
+                "match": {"uri": "/foo", "arguments": {"arg": "val"}},
+                "action": {"rewrite": "/new?some", "pass": "routes"},
+            },
+            {
+                "match": {"uri": "/new", "arguments": {"arg": "val"}},
+                "action": {"return": 200},
+            },
+        ],
+        'routes',
+    )
+    assert client.get(url='/foo?arg=val')['status'] == 200
+
+def test_rewrite_njs(require):
+    require({'modules': {'njs': 'any'}})
+
+    set_rewrite("`/${host}`", "/localhost")
+    assert client.get()['status'] == 200
+
+def test_rewrite_share(temp_dir):
+    os.makedirs(f'{temp_dir}/dir')
+    os.makedirs(f'{temp_dir}/foo')
+
+    with open(f'{temp_dir}/foo/index.html', 'w') as fooindex:
+        fooindex.write('fooindex')
+
+    # same action block
+
+    assert 'success' in client.conf(
+        {
+            "listeners": {"*:7080": {"pass": "routes"}},
+            "routes": [
+                {
+                    "action": {
+                        "rewrite": "/dir",
+                        "share": f'{temp_dir}$uri',
+                    }
+                }
+            ],
+        }
+    )
+
+    resp = client.get()
+    assert resp['status'] == 301, 'redirect status'
+    assert resp['headers']['Location'] == '/dir/', 'redirect Location'
+
+    # variable cache
+
+    index_path = f'{temp_dir}${{uri}}/index.html'
+    assert 'success' in client.conf(
+        {
+            "listeners": {"*:7080": {"pass": "routes"}},
+            "routes": [
+                {
+                    "match": {"uri": "/foo"},
+                    "action": {
+                        "rewrite": "${uri}dir",
+                        "pass": "routes",
+                    },
+                },
+                {"action": {"share": index_path}},
+            ],
+        }
+    )
+
+    assert client.get(url='/foo')['body'] == 'fooindex'
+
+    # different action block
+
+    assert 'success' in client.conf(
+        {
+            "listeners": {"*:7080": {"pass": "routes"}},
+            "routes": [
+                {
+                    "match": {"uri": "/foo"},
+                    "action": {
+                        "rewrite": "${uri}dir",
+                        "pass": "routes",
+                    },
+                },
+                {
+                    "action": {
+                        "share": f'{temp_dir}/dir',
+                    }
+                },
+            ],
+        }
+    )
+    resp = client.get(url='/foo')
+    assert resp['status'] == 301, 'redirect status 2'
+    assert resp['headers']['Location'] == '/foodir/', 'redirect Location 2'
+
+def test_rewrite_invalid(skip_alert):
+    skip_alert(r'failed to apply new conf')
+
+    def check_rewrite(rewrite):
+        assert 'error' in client.conf(
             [
                 {
                     "match": {"uri": "/"},
                     "action": {"rewrite": rewrite, "pass": "routes"},
                 },
-                {"match": {"uri": uri}, "action": {"return": 200}},
+                {"action": {"return": 200}},
             ],
             'routes',
         )
 
-    def test_rewrite(self):
-        assert self.get()['status'] == 200
-
-        self.set_rewrite("", "")
-        assert self.get()['status'] == 200
-
-    def test_rewrite_variable(self):
-        self.set_rewrite("/$host", "/localhost")
-        assert self.get()['status'] == 200
-
-        self.set_rewrite("${uri}a", "/a")
-        assert self.get()['status'] == 200
-
-    def test_rewrite_arguments(self):
-        assert 'success' in self.conf(
-            [
-                {
-                    "match": {"uri": "/foo", "arguments": {"arg": "val"}},
-                    "action": {"rewrite": "/new?some", "pass": "routes"},
-                },
-                {
-                    "match": {"uri": "/new", "arguments": {"arg": "val"}},
-                    "action": {"return": 200},
-                },
-            ],
-            'routes',
-        )
-        assert self.get(url='/foo?arg=val')['status'] == 200
-
-    def test_rewrite_njs(self, require):
-        require({'modules': {'njs': 'any'}})
-
-        self.set_rewrite("`/${host}`", "/localhost")
-        assert self.get()['status'] == 200
-
-    def test_rewrite_share(self, temp_dir):
-        os.makedirs(f'{temp_dir}/dir')
-        os.makedirs(f'{temp_dir}/foo')
-
-        with open(f'{temp_dir}/foo/index.html', 'w') as fooindex:
-            fooindex.write('fooindex')
-
-        # same action block
-
-        assert 'success' in self.conf(
-            {
-                "listeners": {"*:7080": {"pass": "routes"}},
-                "routes": [
-                    {
-                        "action": {
-                            "rewrite": "/dir",
-                            "share": f'{temp_dir}$uri',
-                        }
-                    }
-                ],
-            }
-        )
-
-        resp = self.get()
-        assert resp['status'] == 301, 'redirect status'
-        assert resp['headers']['Location'] == '/dir/', 'redirect Location'
-
-        # variable cache
-
-        index_path = f'{temp_dir}${{uri}}/index.html'
-        assert 'success' in self.conf(
-            {
-                "listeners": {"*:7080": {"pass": "routes"}},
-                "routes": [
-                    {
-                        "match": {"uri": "/foo"},
-                        "action": {
-                            "rewrite": "${uri}dir",
-                            "pass": "routes",
-                        },
-                    },
-                    {"action": {"share": index_path}},
-                ],
-            }
-        )
-
-        assert self.get(url='/foo')['body'] == 'fooindex'
-
-        # different action block
-
-        assert 'success' in self.conf(
-            {
-                "listeners": {"*:7080": {"pass": "routes"}},
-                "routes": [
-                    {
-                        "match": {"uri": "/foo"},
-                        "action": {
-                            "rewrite": "${uri}dir",
-                            "pass": "routes",
-                        },
-                    },
-                    {
-                        "action": {
-                            "share": f'{temp_dir}/dir',
-                        }
-                    },
-                ],
-            }
-        )
-        resp = self.get(url='/foo')
-        assert resp['status'] == 301, 'redirect status 2'
-        assert resp['headers']['Location'] == '/foodir/', 'redirect Location 2'
-
-    def test_rewrite_invalid(self, skip_alert):
-        skip_alert(r'failed to apply new conf')
-
-        def check_rewrite(rewrite):
-            assert 'error' in self.conf(
-                [
-                    {
-                        "match": {"uri": "/"},
-                        "action": {"rewrite": rewrite, "pass": "routes"},
-                    },
-                    {"action": {"return": 200}},
-                ],
-                'routes',
-            )
-
-        check_rewrite("/$blah")
-        check_rewrite(["/"])
+    check_rewrite("/$blah")
+    check_rewrite(["/"])

@@ -1,91 +1,93 @@
-from unit.applications.lang.ruby import TestApplicationRuby
+from unit.applications.lang.ruby import ApplicationRuby
 from unit.option import option
 from unit.utils import waitforglob
 
 prerequisites = {'modules': {'ruby': 'all'}}
 
 
-class TestRubyHooks(TestApplicationRuby):
-    def _wait_cookie(self, pattern, count):
-        return waitforglob(
-            option.temp_dir + '/ruby/hooks/cookie_' + pattern, count
-        )
+client = ApplicationRuby()
 
-    def test_ruby_hooks_eval(self):
-        processes = 2
 
-        self.load('hooks', processes=processes, hooks='eval.rb')
+def _wait_cookie(pattern, count):
+    return waitforglob(
+        option.temp_dir + '/ruby/hooks/cookie_' + pattern, count
+    )
 
-        hooked = self._wait_cookie('eval.*', processes)
+def test_ruby_hooks_eval():
+    processes = 2
 
-        assert hooked, 'hooks evaluated'
+    client.load('hooks', processes=processes, hooks='eval.rb')
 
-    def test_ruby_hooks_on_worker_boot(self):
-        processes = 2
+    hooked = _wait_cookie('eval.*', processes)
 
-        self.load('hooks', processes=processes, hooks='on_worker_boot.rb')
+    assert hooked, 'hooks evaluated'
 
-        hooked = self._wait_cookie('worker_boot.*', processes)
+def test_ruby_hooks_on_worker_boot():
+    processes = 2
 
-        assert hooked, 'on_worker_boot called'
+    client.load('hooks', processes=processes, hooks='on_worker_boot.rb')
 
-    def test_ruby_hooks_on_worker_shutdown(self):
-        processes = 2
+    hooked = _wait_cookie('worker_boot.*', processes)
 
-        self.load('hooks', processes=processes, hooks='on_worker_shutdown.rb')
+    assert hooked, 'on_worker_boot called'
 
-        assert self.get()['status'] == 200, 'app response'
+def test_ruby_hooks_on_worker_shutdown():
+    processes = 2
 
-        self.load('empty')
+    client.load('hooks', processes=processes, hooks='on_worker_shutdown.rb')
 
-        hooked = self._wait_cookie('worker_shutdown.*', processes)
+    assert client.get()['status'] == 200, 'app response'
 
-        assert hooked, 'on_worker_shutdown called'
+    client.load('empty')
 
-    def test_ruby_hooks_on_thread_boot(self):
-        processes = 1
-        threads = 2
+    hooked = _wait_cookie('worker_shutdown.*', processes)
 
-        self.load(
-            'hooks',
-            processes=processes,
-            threads=threads,
-            hooks='on_thread_boot.rb',
-        )
+    assert hooked, 'on_worker_shutdown called'
 
-        hooked = self._wait_cookie('thread_boot.*', processes * threads)
+def test_ruby_hooks_on_thread_boot():
+    processes = 1
+    threads = 2
 
-        assert hooked, 'on_thread_boot called'
+    client.load(
+        'hooks',
+        processes=processes,
+        threads=threads,
+        hooks='on_thread_boot.rb',
+    )
 
-    def test_ruby_hooks_on_thread_shutdown(self):
-        processes = 1
-        threads = 2
+    hooked = _wait_cookie('thread_boot.*', processes * threads)
 
-        self.load(
-            'hooks',
-            processes=processes,
-            threads=threads,
-            hooks='on_thread_shutdown.rb',
-        )
+    assert hooked, 'on_thread_boot called'
 
-        assert self.get()['status'] == 200, 'app response'
+def test_ruby_hooks_on_thread_shutdown():
+    processes = 1
+    threads = 2
 
-        self.load('empty')
+    client.load(
+        'hooks',
+        processes=processes,
+        threads=threads,
+        hooks='on_thread_shutdown.rb',
+    )
 
-        hooked = self._wait_cookie('thread_shutdown.*', processes * threads)
+    assert client.get()['status'] == 200, 'app response'
 
-        assert hooked, 'on_thread_shutdown called'
+    client.load('empty')
 
-    def test_ruby_hooks_multiple(self):
-        processes = 1
-        threads = 1
+    hooked = _wait_cookie('thread_shutdown.*', processes * threads)
 
-        self.load(
-            'hooks', processes=processes, threads=threads, hooks='multiple.rb',
-        )
+    assert hooked, 'on_thread_shutdown called'
 
-        hooked = self._wait_cookie('worker_boot.*', processes)
-        assert hooked, 'on_worker_boot called'
+def test_ruby_hooks_multiple():
+    processes = 1
+    threads = 1
 
-        hooked = self._wait_cookie('thread_boot.*', threads)
-        assert hooked, 'on_thread_boot called'
+    client.load(
+        'hooks', processes=processes, threads=threads, hooks='multiple.rb',
+    )
+
+    hooked = _wait_cookie('worker_boot.*', processes)
+    assert hooked, 'on_worker_boot called'
+
+    hooked = _wait_cookie('thread_boot.*', threads)
+    assert hooked, 'on_thread_boot called'
