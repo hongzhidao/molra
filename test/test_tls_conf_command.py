@@ -38,6 +38,10 @@ class TestTLSConfCommand(TestApplicationTLS):
         (resp, sock) = self.get_ssl(start=True)
 
         shared_ciphers = sock.shared_ciphers()
+
+        if not shared_ciphers:
+            pytest.skip('no shared ciphers')
+
         protocols = list(set(c[1] for c in shared_ciphers))
         protocol = sock.cipher()[1]
 

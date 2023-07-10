@@ -69,6 +69,10 @@ class TestTLSSession(TestApplicationTLS):
             _lib.SSL_session_reused(client._ssl),
         )
 
+    @pytest.mark.skipif(
+        not hasattr(_lib, 'SSL_session_reused'),
+        reason='session reuse is not supported',
+    )
     def test_tls_session(self):
         client, sess, ctx, reused = self.connect()
         assert not reused, 'new connection'
@@ -105,6 +109,10 @@ class TestTLSSession(TestApplicationTLS):
         clients_again = [self.connect(c[2], c[1]) for c in clients]
         assert False not in [c[-1] for c in clients_again], 'cache big reuse'
 
+    @pytest.mark.skipif(
+        not hasattr(_lib, 'SSL_session_reused'),
+        reason='session reuse is not supported',
+    )
     def test_tls_session_timeout(self):
         assert 'success' in self.add_session(cache_size=5, timeout=1)
 
