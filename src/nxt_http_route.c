@@ -1597,6 +1597,11 @@ nxt_http_route_handler(nxt_task_t *task, nxt_http_request_t *r,
     while (match < end) {
         action = nxt_http_route_match(task, r, *match);
         if (action != NULL) {
+
+            if (action != NXT_HTTP_ACTION_ERROR) {
+                r->action = action;
+            }
+
             return action;
         }
 
