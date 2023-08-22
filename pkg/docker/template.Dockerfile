@@ -21,7 +21,9 @@ RUN set -ex \
     && CONFIGURE_ARGS="--prefix=/usr \
                 --state=/var/lib/unit \
                 --control=unix:/var/run/control.unit.sock \
+                --runstatedir=/var/run \
                 --pid=/var/run/unit.pid \
+                --logdir=/var/log \
                 --log=/var/log/unit.log \
                 --tmp=/var/tmp \
                 --user=unit \
