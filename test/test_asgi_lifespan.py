@@ -57,7 +57,7 @@ def test_asgi_lifespan():
 def test_asgi_lifespan_targets():
     assert 'success' in client.conf(
         {
-            "listeners": {"*:7080": {"pass": "routes"}},
+            "listeners": {"*:8080": {"pass": "routes"}},
             "routes": [
                 {
                     "match": {"uri": "/1"},

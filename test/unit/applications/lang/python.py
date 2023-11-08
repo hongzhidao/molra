@@ -58,7 +58,7 @@ class ApplicationPython(ApplicationProto):
         self._load_conf(
             {
                 "listeners": {
-                    "*:7080": {"pass": "applications/" + quote(name, '')}
+                    "*:8080": {"pass": "applications/" + quote(name, '')}
                 },
                 "applications": {name: app},
             },

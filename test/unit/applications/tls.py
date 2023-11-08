@@ -54,7 +54,7 @@ class ApplicationTLS(ApplicationProto):
         context = kwargs.get('context', self._default_context)
         return self.post(wrapper=context.wrap_socket, **kwargs)
 
-    def get_server_certificate(self, addr=('127.0.0.1', 7080)):
+    def get_server_certificate(self, addr=('127.0.0.1', 8080)):
 
         ssl_list = dir(ssl)
 
@@ -122,7 +122,7 @@ basicConstraints = critical,CA:TRUE""".format(
 
         self._load_conf(
             {
-                "listeners": {"*:7080": {"pass": "applications/" + name}},
+                "listeners": {"*:8080": {"pass": "applications/" + name}},
                 "applications": {
                     name: {
                         "type": "python",

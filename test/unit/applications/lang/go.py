@@ -70,7 +70,7 @@ class ApplicationGo(ApplicationProto):
         ApplicationGo.prepare_env(script, name, static=static_build)
 
         conf = {
-            "listeners": {"*:7080": {"pass": "applications/" + script}},
+            "listeners": {"*:8080": {"pass": "applications/" + script}},
             "applications": {
                 script: {
                     "type": "external",

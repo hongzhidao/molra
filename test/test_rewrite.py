@@ -11,7 +11,7 @@ client = ApplicationProto()
 def setup_method_fixture():
     assert 'success' in client.conf(
         {
-            "listeners": {"*:7080": {"pass": "routes"}},
+            "listeners": {"*:8080": {"pass": "routes"}},
             "routes": [
                 {
                     "match": {"uri": "/"},
@@ -81,7 +81,7 @@ def test_rewrite_share(temp_dir):
 
     assert 'success' in client.conf(
         {
-            "listeners": {"*:7080": {"pass": "routes"}},
+            "listeners": {"*:8080": {"pass": "routes"}},
             "routes": [
                 {
                     "action": {
@@ -101,7 +101,7 @@ def test_rewrite_share(temp_dir):
 
     assert 'success' in client.conf(
         {
-            "listeners": {"*:7080": {"pass": "routes"}},
+            "listeners": {"*:8080": {"pass": "routes"}},
             "routes": [
                 {
                     "match": {"uri": "/foo"},

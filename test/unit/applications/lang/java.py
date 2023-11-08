@@ -96,7 +96,7 @@ class ApplicationJava(ApplicationProto):
 
         self._load_conf(
             {
-                "listeners": {"*:7080": {"pass": "applications/" + script}},
+                "listeners": {"*:8080": {"pass": "applications/" + script}},
                 "applications": {
                     script: {
                         "unit_jars": option.current_dir + '/build',

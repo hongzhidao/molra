@@ -97,7 +97,7 @@ def test_php_application_query_string_empty():
 def test_php_application_query_string_rewrite():
     assert 'success' in client.conf(
         {
-            "listeners": {"*:7080": {"pass": "routes"}},
+            "listeners": {"*:8080": {"pass": "routes"}},
             "routes": [
                 {
                     "action": {
@@ -591,7 +591,7 @@ def test_php_application_error_log(findall, wait_for_record):
 def test_php_application_script():
     assert 'success' in client.conf(
         {
-            "listeners": {"*:7080": {"pass": "applications/script"}},
+            "listeners": {"*:8080": {"pass": "applications/script"}},
             "applications": {
                 "script": {
                     "type": "php",
@@ -611,7 +611,7 @@ def test_php_application_script():
 def test_php_application_index_default():
     assert 'success' in client.conf(
         {
-            "listeners": {"*:7080": {"pass": "applications/phpinfo"}},
+            "listeners": {"*:8080": {"pass": "applications/phpinfo"}},
             "applications": {
                 "phpinfo": {
                     "type": "php",
@@ -638,7 +638,7 @@ def test_php_application_extension_check(temp_dir):
 
     assert 'success' in client.conf(
         {
-            "listeners": {"*:7080": {"pass": "applications/phpinfo"}},
+            "listeners": {"*:8080": {"pass": "applications/phpinfo"}},
             "applications": {
                 "phpinfo": {
                     "type": "php",

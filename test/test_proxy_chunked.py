@@ -24,7 +24,7 @@ def setup_method_fixture():
     assert 'success' in client.conf(
         {
             "listeners": {
-                "*:7080": {"pass": "routes"},
+                "*:8080": {"pass": "routes"},
             },
             "routes": [
                 {

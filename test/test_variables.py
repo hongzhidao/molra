@@ -17,7 +17,7 @@ client_python = ApplicationPython()
 def setup_method_fixture():
     assert 'success' in client.conf(
         {
-            "listeners": {"*:7080": {"pass": "routes"}},
+            "listeners": {"*:8080": {"pass": "routes"}},
             "routes": [{"action": {"return": 200}}],
         },
     ), 'configure routes'
@@ -98,7 +98,7 @@ def test_variables_uri_no_cache(temp_dir):
 
     assert 'success' in client.conf(
         {
-            "listeners": {"*:7080": {"pass": "routes"}},
+            "listeners": {"*:8080": {"pass": "routes"}},
             "routes": [
                 {
                     "action": {
@@ -131,7 +131,7 @@ def test_variables_host(search_in_file, wait_for_record):
 
     check_host('localhost')
     check_host('localhost1.', 'localhost1')
-    check_host('localhost2:7080', 'localhost2')
+    check_host('localhost2:8080', 'localhost2')
     check_host('.localhost')
     check_host('www.localhost')
 
@@ -142,7 +142,7 @@ def test_variables_remote_addr(search_in_file, wait_for_record):
     assert wait_for_record(r'^127\.0\.0\.1$', 'access.log') is not None
 
     assert 'success' in client.conf(
-        {"[::1]:7080": {"pass": "routes"}}, 'listeners'
+        {"[::1]:8080": {"pass": "routes"}}, 'listeners'
     )
 
     reg = r'^::1$'
@@ -277,7 +277,7 @@ def test_variables_empty():
         assert 'success' in client.conf(
             {
                 "listeners": {
-                    "*:7080": {"pass": prefix + "/$method"},
+                    "*:8080": {"pass": prefix + "/$method"},
                 },
             },
         ), 'variables empty'
@@ -425,7 +425,7 @@ def test_variables_response_header(temp_dir, wait_for_record):
 
     assert 'success' in client.conf(
         {
-            "listeners": {"*:7080": {"pass": "routes"}},
+            "listeners": {"*:8080": {"pass": "routes"}},
             "routes": [
                 {
                     "action": {

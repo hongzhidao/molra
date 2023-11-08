@@ -107,7 +107,7 @@ def test_access_log_ipv6(wait_for_record):
     load('empty')
 
     assert 'success' in client.conf(
-        {"[::1]:7080": {"pass": "applications/empty"}}, 'listeners'
+        {"[::1]:8080": {"pass": "applications/empty"}}, 'listeners'
     )
 
     client.get(sock_type='ipv6')

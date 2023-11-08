@@ -14,16 +14,16 @@ def setup_method_fixture():
 def client_ip(options):
     assert 'success' in client.conf(
         {
-            "127.0.0.1:7081":
+            "127.0.0.1:8081":
                 {"client_ip": options, "pass": "applications/client_ip"},
-            "[::1]:7082":
+            "[::1]:8082":
                 {"client_ip": options, "pass": "applications/client_ip"},
         },
         'listeners',
     ), 'listeners configure'
 
 def get_xff(xff, sock_type='ipv4'):
-    port = 7081 if sock_type == 'ipv4' else 7082
+    port = 8081 if sock_type == 'ipv4' else 8082
 
     return client.get(
         sock_type=sock_type,
@@ -36,9 +36,9 @@ def test_client_ip_single_ip():
         {'header': 'X-Forwarded-For', 'source': '123.123.123.123'}
     )
 
-    assert client.get(port=7081)['body'] == '127.0.0.1', 'ipv4 default'
+    assert client.get(port=8081)['body'] == '127.0.0.1', 'ipv4 default'
     assert (
-        client.get(sock_type='ipv6', port=7082)['body'] == '::1'
+        client.get(sock_type='ipv6', port=8082)['body'] == '::1'
     ), 'ipv6 default'
     assert get_xff('1.1.1.1') == '127.0.0.1', 'bad source'
     assert get_xff('blah') == '127.0.0.1', 'bad header'
@@ -46,9 +46,9 @@ def test_client_ip_single_ip():
 
     client_ip({'header': 'X-Forwarded-For', 'source': '127.0.0.1'})
 
-    assert client.get(port=7081)['body'] == '127.0.0.1', 'ipv4 default 2'
+    assert client.get(port=8081)['body'] == '127.0.0.1', 'ipv4 default 2'
     assert (
-        client.get(sock_type='ipv6', port=7082)['body'] == '::1'
+        client.get(sock_type='ipv6', port=8082)['body'] == '::1'
     ), 'ipv6 default 2'
     assert get_xff('1.1.1.1') == '1.1.1.1', 'replace'
     assert get_xff('blah') == '127.0.0.1', 'bad header 2'
@@ -133,7 +133,7 @@ def test_client_ip_empty_source():
 def test_client_ip_invalid():
     assert 'error' in client.conf(
         {
-            "127.0.0.1:7081": {
+            "127.0.0.1:8081": {
                 "client_ip": {"source": '127.0.0.1'},
                 "pass": "applications/client_ip",
             }
@@ -144,7 +144,7 @@ def test_client_ip_invalid():
     def check_invalid_source(source):
         assert 'error' in client.conf(
             {
-                "127.0.0.1:7081": {
+                "127.0.0.1:8081": {
                     "client_ip": {
                         "header": "X-Forwarded-For",
                         "source": source,

@@ -13,7 +13,7 @@ prerequisites = {'modules': {'python': 'any', 'openssl': 'any'}}
 client = ApplicationTLS()
 
 
-def add_tls(application='empty', cert='default', port=7080):
+def add_tls(application='empty', cert='default', port=8080):
     assert 'success' in client.conf(
         {
             "pass": "applications/" + application,
@@ -22,7 +22,7 @@ def add_tls(application='empty', cert='default', port=7080):
         'listeners/*:' + str(port),
     )
 
-def remove_tls(application='empty', port=7080):
+def remove_tls(application='empty', port=8080):
     assert 'success' in client.conf(
         {"pass": "applications/" + application}, 'listeners/*:' + str(port)
     )
@@ -552,7 +552,7 @@ def test_tls_no_close_notify():
     assert 'success' in client.conf(
         {
             "listeners": {
-                "*:7080": {
+                "*:8080": {
                     "pass": "routes",
                     "tls": {"certificate": "default"},
                 }
@@ -585,7 +585,7 @@ def test_tls_keepalive_certificate_remove():
     )
 
     assert 'success' in client.conf(
-        {"pass": "applications/empty"}, 'listeners/*:7080'
+        {"pass": "applications/empty"}, 'listeners/*:8080'
     )
     assert 'success' in client.conf_delete('/certificates/default')
 
@@ -715,8 +715,8 @@ def test_tls_multi_listener():
     client.certificate()
 
     add_tls()
-    add_tls(port=7081)
+    add_tls(port=8081)
 
     assert client.get_ssl()['status'] == 200, 'listener #1'
 
-    assert client.get_ssl(port=7081)['status'] == 200, 'listener #2'
+    assert client.get_ssl(port=8081)['status'] == 200, 'listener #2'

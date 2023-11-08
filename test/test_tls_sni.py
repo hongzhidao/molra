@@ -15,7 +15,7 @@ client = ApplicationTLS()
 def setup_method_fixture():
     client._load_conf(
         {
-            "listeners": {"*:7080": {"pass": "routes"}},
+            "listeners": {"*:8080": {"pass": "routes"}},
             "routes": [{"action": {"return": 200}}],
             "applications": {},
         }
@@ -24,11 +24,11 @@ def setup_method_fixture():
 def add_tls(cert='default'):
     assert 'success' in client.conf(
         {"pass": "routes", "tls": {"certificate": cert}},
-        'listeners/*:7080',
+        'listeners/*:8080',
     )
 
 def remove_tls():
-    assert 'success' in client.conf({"pass": "routes"}, 'listeners/*:7080')
+    assert 'success' in client.conf({"pass": "routes"}, 'listeners/*:8080')
 
 def generate_ca_conf():
     with open(option.temp_dir + '/ca.conf', 'w') as f:
@@ -285,7 +285,7 @@ def test_tls_sni_invalid():
     def check_certificate(cert):
         assert 'error' in client.conf(
             {"pass": "routes", "tls": {"certificate": cert}},
-            'listeners/*:7080',
+            'listeners/*:8080',
         )
 
     check_certificate('')
