@@ -22,7 +22,7 @@ def setup_method_fixture(temp_dir):
 
 def create_files(*files):
     assets_dir = option.temp_dir + '/assets/'
-    os.makedirs(assets_dir)
+    os.makedirs(assets_dir, exist_ok=True)
 
     [open(assets_dir + f, 'a') for f in files]
     waitforfiles(*[assets_dir + f for f in files])
@@ -76,6 +76,39 @@ def test_njs_variables(temp_dir):
     set_share('"`' + temp_dir + '/assets/${args.foo}`"')
     assert client.get(url='/?foo=str')['status'] == 200, 'args'
 
+    check_expression('/${vars.header_host}')
+
+    set_share(f'"`{temp_dir}/assets/${{vars[\\"arg_foo\\"]}}`"')
+    assert client.get(url='/?foo=str')['status'] == 200, 'vars'
+
+    set_share(f'"`{temp_dir}/assets/${{vars.non_exist}}`"')
+    assert client.get()['status'] == 404, 'undefined'
+
+    create_files('undefined')
+    assert client.get()['status'] == 200, 'undefined 2'
+
+
+def test_njs_variables_cacheable(temp_dir):
+    create_files('str')
+
+    def check_rewrite(rewrite, uri):
+        assert 'success' in client.conf(
+            [
+                {
+                    "action": {
+                        "rewrite": rewrite,
+                        "share": f"`{temp_dir}/assets{uri}`",
+                    },
+                },
+            ],
+            'routes',
+        )
+        assert client.get()['status'] == 200
+
+    check_rewrite('/str', '${uri}')
+    check_rewrite('/str', '${vars.uri}')
+
+
 def test_njs_invalid(skip_alert):
     skip_alert(r'js exception:')
 
@@ -85,6 +118,7 @@ def test_njs_invalid(skip_alert):
     check_invalid('"`a"')
     check_invalid('"`a``"')
     check_invalid('"`a`/"')
+    check_invalid('"`${vars.}`"')
 
     def check_invalid_resolve(template):
         assert 'success' in client.conf(template, 'routes/0/action/share')
@@ -92,3 +126,4 @@ def test_njs_invalid(skip_alert):
 
     check_invalid_resolve('"`${a}`"')
     check_invalid_resolve('"`${uri.a.a}`"')
+    check_invalid_resolve('"`${vars.a.a}`"')
