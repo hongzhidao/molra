@@ -940,6 +940,10 @@ nxt_http_arguments_parse(nxt_http_request_t *r)
         return NULL;
     }
 
+    if (nxt_slow_path(r->args->start == NULL)) {
+        goto end;
+    }
+
     hash = NXT_HTTP_FIELD_HASH_INIT;
     name = NULL;
     name_length = 0;
@@ -1019,6 +1023,8 @@ nxt_http_arguments_parse(nxt_http_request_t *r)
             return NULL;
         }
     }
+
+end:
 
     r->arguments = args;
 
