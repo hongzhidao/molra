@@ -68,7 +68,7 @@ RUN set -x \
     && apt --no-install-recommends --no-install-suggests -y install curl $(cat /requirements.apt) \
     && rm -rf /var/lib/apt/lists/* \
     && rm -f /requirements.apt \
-    && ln -sf /dev/stdout /var/log/unit.log
+    && ln -sf /dev/stderr /var/log/unit.log
 
 STOPSIGNAL SIGTERM
 
