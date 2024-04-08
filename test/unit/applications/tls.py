@@ -99,9 +99,13 @@ subjectAltName = @alt_names
 default_bits = 2048
 encrypt_key = no
 distinguished_name = req_distinguished_name
+x509_extensions = myca_extensions
 
 {a_sec}
-[ req_distinguished_name ]""".format(
+[ req_distinguished_name ]
+
+[ myca_extensions ]
+basicConstraints = critical,CA:TRUE""".format(
                     a_sec=a_sec if alt_names else ""
                 )
             )
