@@ -20,6 +20,8 @@ else ifeq ($(shell rpm --eval "%{?amzn}"), 1)
 OSVER = amazonlinux1
 else ifeq ($(shell rpm --eval "%{?amzn}"), 2)
 OSVER = amazonlinux2
+else ifeq ($(shell test `rpm --eval '0%{?fedora} -eq 41'`; echo $$?),0)
+OSVER = fedora41
 else ifeq ($(shell test `rpm --eval '0%{?suse_version} -ge 1315 -a 0%{?suse_version} -lt 1330 -a 0%{?is_opensuse} -eq 1'`; echo $$?), 0)
 OSVER = opensuse-leap
 else ifeq ($(shell test `rpm --eval '0%{?suse_version} -ge 1330 -a 0%{?is_opensuse} -eq 1'`; echo $$?), 0)
@@ -151,6 +153,12 @@ include Makefile.ruby
 include Makefile.jsc-common
 include Makefile.jsc8
 include Makefile.jsc11
+endif
+
+ifeq ($(OSVER), fedora41)
+include Makefile.php
+include Makefile.python313
+include Makefile.go
 endif
 
 CONFIGURE_ARGS_COMMON=\
