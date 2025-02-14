@@ -88,6 +88,7 @@ PKG_CONFIG_PATH=%{bdir}/pkg/contrib/njs/build \
 	%{CONFIGURE_ARGS} \
 	--modules=%{_libdir}/unit/debug-modules \
 	--libdir=%{_libdir} \
+	--sbindir=%{_sbindir} \
 	--cc-opt="%{CC_OPT}" \
 	--ld-opt="%{LD_OPT}" \
 	--debug
@@ -135,6 +136,9 @@ DESTDIR=%{buildroot} make unitd-install libunit-install manpage-install
 %{__rm} -rf %{buildroot}%{_initrddir}/
 %{__install} -p -D -m 0644 %{SOURCE1} %{buildroot}%{_unitdir}/unit.service
 %{__install} -p -D -m 0644 %{SOURCE2} %{buildroot}%{_unitdir}/unit-debug.service
+# relocate when sbindir is /usr/bin
+sed -e 's:/usr/sbin:%{_sbindir}:' -i %{buildroot}%{_unitdir}/*.service
+
 
 QA_SKIP_BUILD_ROOT=1
 export QA_SKIP_BUILD_ROOT
