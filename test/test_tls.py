@@ -110,6 +110,7 @@ basicConstraints = critical,CA:TRUE"""
         self.context = ssl.create_default_context()
         self.context.check_hostname = False
         self.context.verify_mode = ssl.CERT_REQUIRED
+        self.context.verify_flags &= ~ssl.VERIFY_X509_STRICT
         self.context.load_verify_locations(
             option.temp_dir + '/' + cert + '.crt'
         )
