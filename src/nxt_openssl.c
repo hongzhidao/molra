@@ -1598,7 +1598,10 @@ nxt_openssl_conn_test_error(nxt_task_t *task, nxt_conn_t *c, int ret,
 
         nxt_debug(task, "ERR_peek_error(): %l", lib_err);
 
-        if (sys_err != 0 || lib_err != 0) {
+        if (io == NXT_OPENSSL_SHUTDOWN && sys_err == NXT_EPIPE) {
+            ERR_clear_error();
+
+        } else if (sys_err != 0 || lib_err != 0) {
             c->socket.error = sys_err;
             return NXT_ERROR;
         }
