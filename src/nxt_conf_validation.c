@@ -1225,8 +1225,7 @@ nxt_conf_validate(nxt_conf_validation_t *vldt)
 
     vldt->tstr_state = nxt_tstr_state_new(vldt->pool, 1);
     if (nxt_slow_path(vldt->tstr_state == NULL)) {
-        ret = NXT_ERROR;
-        goto fail;
+        return NXT_ERROR;
     }
 
     ret = nxt_conf_vldt_type(vldt, NULL, vldt->conf, NXT_CONF_VLDT_OBJECT);
