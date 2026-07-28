@@ -107,7 +107,7 @@ nxt_http_static_init(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
             cv = nxt_conf_get_array_element(acf->share, i);
             nxt_conf_get_string(cv, &str);
 
-            var = nxt_var_compile(&str, mp, 1);
+            var = nxt_var_compile(&str, mp, rtcf->var_fields, 1);
             if (nxt_slow_path(var == NULL)) {
                 return NXT_ERROR;
             }
