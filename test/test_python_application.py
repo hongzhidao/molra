@@ -298,10 +298,9 @@ custom-header: BLAH
 
         assert self.get()['status'] == 200, 'init'
 
-        (_, sock) = self.http(
+        sock = self.http(
             b"""GET / HTTP/1.1
 """,
-            start=True,
             raw=True,
             no_recv=True,
         )
