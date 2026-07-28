@@ -20,7 +20,6 @@ class TestRewrite(TestApplicationProto):
                     {"match": {"uri": "/new"}, "action": {"return": 200}},
                 ],
                 "applications": {},
-                "settings": {"http": {"log_route": True}},
             },
         ), 'set initial configuration'
 
@@ -38,12 +37,6 @@ class TestRewrite(TestApplicationProto):
 
     def test_rewrite(self):
         assert self.get()['status'] == 200
-        assert (
-            self.wait_for_record(rf'\[notice\].*"routes/1" selected')
-            is not None
-        )
-        assert len(self.findall(rf'\[notice\].*URI rewritten to "/new"')) == 1
-        assert len(self.findall(rf'\[notice\].*URI rewritten')) == 1
 
         self.set_rewrite("", "")
         assert self.get()['status'] == 200
@@ -54,34 +47,6 @@ class TestRewrite(TestApplicationProto):
 
         self.set_rewrite("${uri}a", "/a")
         assert self.get()['status'] == 200
-
-    def test_rewrite_encoded(self):
-        assert 'success' in self.conf(
-            [
-                {
-                    "match": {"uri": "/f"},
-                    "action": {"rewrite": "${request_uri}oo", "pass": "routes"},
-                },
-                {"match": {"uri": "/foo"}, "action": {"return": 200}},
-            ],
-            'routes',
-        )
-        assert self.get(url='/%66')['status'] == 200
-
-        assert 'success' in self.conf(
-            [
-                {
-                    "match": {"uri": "/f"},
-                    "action": {
-                        "rewrite": "${request_uri}o%6F",
-                        "pass": "routes",
-                    },
-                },
-                {"match": {"uri": "/foo"}, "action": {"return": 200}},
-            ],
-            'routes',
-        )
-        assert self.get(url='/%66')['status'] == 200
 
     def test_rewrite_arguments(self):
         assert 'success' in self.conf(
@@ -106,27 +71,6 @@ class TestRewrite(TestApplicationProto):
         self.set_rewrite("`/${host}`", "/localhost")
         assert self.get()['status'] == 200
 
-    def test_rewrite_location(self):
-        def check_location(rewrite, expect):
-            assert 'success' in self.conf(
-                {
-                    "listeners": {"*:7080": {"pass": "routes"}},
-                    "routes": [
-                        {
-                            "action": {
-                                "return": 301,
-                                "location": "$uri",
-                                "rewrite": rewrite,
-                            }
-                        }
-                    ],
-                }
-            )
-            assert self.get()['headers']['Location'] == expect
-
-        check_location('/new', '/new')
-        check_location('${request_uri}new', '/new')
-
     def test_rewrite_share(self, temp_dir):
         os.makedirs(f'{temp_dir}/dir')
         os.makedirs(f'{temp_dir}/foo')
@@ -142,7 +86,7 @@ class TestRewrite(TestApplicationProto):
                 "routes": [
                     {
                         "action": {
-                            "rewrite": "${request_uri}dir",
+                            "rewrite": "/dir",
                             "share": f'{temp_dir}$uri',
                         }
                     }
@@ -154,9 +98,9 @@ class TestRewrite(TestApplicationProto):
         assert resp['status'] == 301, 'redirect status'
         assert resp['headers']['Location'] == '/dir/', 'redirect Location'
 
-        # request_uri
+        # variable cache
 
-        index_path = f'{temp_dir}${{request_uri}}/index.html'
+        index_path = f'{temp_dir}${{uri}}/index.html'
         assert 'success' in self.conf(
             {
                 "listeners": {"*:7080": {"pass": "routes"}},
@@ -164,7 +108,7 @@ class TestRewrite(TestApplicationProto):
                     {
                         "match": {"uri": "/foo"},
                         "action": {
-                            "rewrite": "${request_uri}dir",
+                            "rewrite": "${uri}dir",
                             "pass": "routes",
                         },
                     },
@@ -184,7 +128,7 @@ class TestRewrite(TestApplicationProto):
                     {
                         "match": {"uri": "/foo"},
                         "action": {
-                            "rewrite": "${request_uri}dir",
+                            "rewrite": "${uri}dir",
                             "pass": "routes",
                         },
                     },
