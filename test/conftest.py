@@ -529,7 +529,7 @@ def _clear_temp_dir():
     temp_dir = unit_instance['temp_dir']
 
     if is_findmnt and not waitforunmount(temp_dir, timeout=600):
-        exit('Could not unmount some filesystems in tmpdir ({temp_dir}).')
+        exit(f'Could not unmount some filesystems in tmpdir ({temp_dir}).')
 
     for item in os.listdir(temp_dir):
         if item not in [
