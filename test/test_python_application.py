@@ -588,8 +588,8 @@ last line: 987654321
         if not matches:
             pytest.skip('no available locales')
 
-        def unify(str):
-            str.upper().replace('-', '').replace('_', '')
+        def unify(value):
+            return value.upper().replace('-', '').replace('_', '')
 
         for loc in matches:
             assert 'success' in self.conf(
