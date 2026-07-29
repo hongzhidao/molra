@@ -104,14 +104,16 @@ def ca(cert='root', out='localhost'):
         stderr=subprocess.STDOUT,
     )
 
-def set_certificate_req_context(cert='root'):
-    client.context = ssl.create_default_context()
-    client.context.check_hostname = False
-    client.context.verify_mode = ssl.CERT_REQUIRED
-    client.context.verify_flags &= ~ssl.VERIFY_X509_STRICT
-    client.context.load_verify_locations(
+def context_cert_req(cert='root'):
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_REQUIRED
+    context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+    context.load_verify_locations(
         option.temp_dir + '/' + cert + '.crt'
     )
+
+    return context
 
 def test_tls_listener_option_add():
     client.load('empty')
@@ -311,8 +313,6 @@ def test_tls_certificate_chain(temp_dir):
     ) as int:
         crt.write(end.read() + int.read())
 
-    set_certificate_req_context()
-
     # incomplete chain
 
     assert 'success' in client.certificate_load(
@@ -330,8 +330,9 @@ def test_tls_certificate_chain(temp_dir):
 
     add_tls(cert='end')
 
+    ctx_cert_req = context_cert_req()
     try:
-        resp = client.get_ssl()
+        resp = client.get_ssl(context=ctx_cert_req)
     except ssl.SSLError:
         resp = None
 
@@ -382,7 +383,7 @@ def test_tls_certificate_chain(temp_dir):
     add_tls(cert='end-int')
 
     assert (
-        client.get_ssl()['status'] == 200
+        client.get_ssl(context=ctx_cert_req)['status'] == 200
     ), 'certificate chain intermediate server'
 
 def test_tls_certificate_chain_long(temp_dir):
@@ -417,8 +418,6 @@ def test_tls_certificate_chain_long(temp_dir):
         with open(temp_dir + '/all.crt', 'a') as chain, open(path) as cert:
             chain.write(cert.read())
 
-    set_certificate_req_context()
-
     assert 'success' in client.certificate_load(
         'all', 'end'
     ), 'certificate chain upload'
@@ -428,7 +427,9 @@ def test_tls_certificate_chain_long(temp_dir):
 
     add_tls(cert='all')
 
-    assert client.get_ssl()['status'] == 200, 'certificate chain long'
+    assert (
+        client.get_ssl(context=context_cert_req())['status'] == 200
+    ), 'certificate chain long'
 
 def test_tls_certificate_empty_cn():
     client.certificate('root', False)
@@ -437,8 +438,6 @@ def test_tls_certificate_empty_cn():
 
     generate_ca_conf()
     ca()
-
-    set_certificate_req_context()
 
     assert 'success' in client.certificate_load('localhost', 'localhost')
 
@@ -457,8 +456,6 @@ def test_tls_certificate_empty_cn_san():
 
     generate_ca_conf()
     ca()
-
-    set_certificate_req_context()
 
     assert 'success' in client.certificate_load('localhost', 'localhost')
 
@@ -480,8 +477,6 @@ def test_tls_certificate_empty_cn_san_ip():
 
     generate_ca_conf()
     ca()
-
-    set_certificate_req_context()
 
     assert 'success' in client.certificate_load('localhost', 'localhost')
 

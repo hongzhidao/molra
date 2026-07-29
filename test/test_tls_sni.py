@@ -122,13 +122,15 @@ def config_bundles(bundles):
             stderr=subprocess.STDOUT,
         )
 
-    client.context = ssl.create_default_context()
-    client.context.check_hostname = False
-    client.context.verify_mode = ssl.CERT_REQUIRED
-    client.context.verify_flags &= ~ssl.VERIFY_X509_STRICT
-    client.context.load_verify_locations(option.temp_dir + '/root.crt')
-
     load_certs(bundles)
+
+    context = ssl.create_default_context()
+    context.check_hostname = False
+    context.verify_mode = ssl.CERT_REQUIRED
+    context.verify_flags &= ~ssl.VERIFY_X509_STRICT
+    context.load_verify_locations(option.temp_dir + '/root.crt')
+
+    return context
 
 def load_certs(bundles):
     for bname, bvalue in bundles.items():
@@ -136,7 +138,7 @@ def load_certs(bundles):
             bname, bname
         ), 'certificate {} upload'.format(bvalue['subj'])
 
-def check_cert(host, expect):
+def check_cert(host, expect, context):
     resp, sock = client.get_ssl(
         headers={
             'Host': host,
@@ -144,6 +146,7 @@ def check_cert(host, expect):
             'Connection': 'close',
         },
         start=True,
+        context=context,
     )
 
     assert resp['status'] == 200
@@ -161,12 +164,12 @@ def test_tls_sni():
             "alt_names": ["alt1.example.com", "alt2.example.com"],
         },
     }
-    config_bundles(bundles)
+    context = config_bundles(bundles)
     add_tls(["default", "localhost.com", "example.com"])
 
-    check_cert('alt1.localhost.com', bundles['localhost.com']['subj'])
-    check_cert('alt2.example.com', bundles['example.com']['subj'])
-    check_cert('blah', bundles['default']['subj'])
+    check_cert('alt1.localhost.com', bundles['localhost.com']['subj'], context)
+    check_cert('alt2.example.com', bundles['example.com']['subj'], context)
+    check_cert('blah', bundles['default']['subj'], context)
 
 def test_tls_sni_no_hostname():
     bundles = {
@@ -176,11 +179,13 @@ def test_tls_sni_no_hostname():
             "alt_names": ["example.com"],
         },
     }
-    config_bundles(bundles)
+    context = config_bundles(bundles)
     add_tls(["localhost.com", "example.com"])
 
     resp, sock = client.get_ssl(
-        headers={'Content-Length': '0', 'Connection': 'close'}, start=True,
+        headers={'Content-Length': '0', 'Connection': 'close'},
+        start=True,
+        context=context,
     )
     assert resp['status'] == 200
     assert (
@@ -196,14 +201,14 @@ def test_tls_sni_upper_case():
             "alt_names": ["ALT1.EXAMPLE.COM", "*.ALT2.EXAMPLE.COM"],
         },
     }
-    config_bundles(bundles)
+    context = config_bundles(bundles)
     add_tls(["localhost.com", "example.com"])
 
-    check_cert('localhost.com', bundles['localhost.com']['subj'])
-    check_cert('LOCALHOST.COM', bundles['localhost.com']['subj'])
-    check_cert('EXAMPLE.COM', bundles['localhost.com']['subj'])
-    check_cert('ALT1.EXAMPLE.COM', bundles['example.com']['subj'])
-    check_cert('WWW.ALT2.EXAMPLE.COM', bundles['example.com']['subj'])
+    check_cert('localhost.com', bundles['localhost.com']['subj'], context)
+    check_cert('LOCALHOST.COM', bundles['localhost.com']['subj'], context)
+    check_cert('EXAMPLE.COM', bundles['localhost.com']['subj'], context)
+    check_cert('ALT1.EXAMPLE.COM', bundles['example.com']['subj'], context)
+    check_cert('WWW.ALT2.EXAMPLE.COM', bundles['example.com']['subj'], context)
 
 def test_tls_sni_only_bundle():
     bundles = {
@@ -212,11 +217,11 @@ def test_tls_sni_only_bundle():
             "alt_names": ["alt1.localhost.com", "alt2.localhost.com"],
         }
     }
-    config_bundles(bundles)
+    context = config_bundles(bundles)
     add_tls(["localhost.com"])
 
-    check_cert('domain.com', bundles['localhost.com']['subj'])
-    check_cert('alt1.domain.com', bundles['localhost.com']['subj'])
+    check_cert('domain.com', bundles['localhost.com']['subj'], context)
+    check_cert('alt1.domain.com', bundles['localhost.com']['subj'], context)
 
 def test_tls_sni_wildcard():
     bundles = {
@@ -226,14 +231,14 @@ def test_tls_sni_wildcard():
             "alt_names": ["*.example.com", "*.alt.example.com"],
         },
     }
-    config_bundles(bundles)
+    context = config_bundles(bundles)
     add_tls(["localhost.com", "example.com"])
 
-    check_cert('example.com', bundles['localhost.com']['subj'])
-    check_cert('www.example.com', bundles['example.com']['subj'])
-    check_cert('alt.example.com', bundles['example.com']['subj'])
-    check_cert('www.alt.example.com', bundles['example.com']['subj'])
-    check_cert('www.alt.example.ru', bundles['localhost.com']['subj'])
+    check_cert('example.com', bundles['localhost.com']['subj'], context)
+    check_cert('www.example.com', bundles['example.com']['subj'], context)
+    check_cert('alt.example.com', bundles['example.com']['subj'], context)
+    check_cert('www.alt.example.com', bundles['example.com']['subj'], context)
+    check_cert('www.alt.example.ru', bundles['localhost.com']['subj'], context)
 
 def test_tls_sni_duplicated_bundle():
     bundles = {
@@ -242,26 +247,26 @@ def test_tls_sni_duplicated_bundle():
             "alt_names": ["localhost.com", "alt2.localhost.com"],
         }
     }
-    config_bundles(bundles)
+    context = config_bundles(bundles)
     add_tls(["localhost.com", "localhost.com"])
 
-    check_cert('localhost.com', bundles['localhost.com']['subj'])
-    check_cert('alt2.localhost.com', bundles['localhost.com']['subj'])
+    check_cert('localhost.com', bundles['localhost.com']['subj'], context)
+    check_cert('alt2.localhost.com', bundles['localhost.com']['subj'], context)
 
 def test_tls_sni_same_alt():
     bundles = {
         "localhost": {"subj": "subj1", "alt_names": "same.altname.com"},
         "example": {"subj": "subj2", "alt_names": "same.altname.com"},
     }
-    config_bundles(bundles)
+    context = config_bundles(bundles)
     add_tls(["localhost", "example"])
 
-    check_cert('localhost', bundles['localhost']['subj'])
-    check_cert('example', bundles['localhost']['subj'])
+    check_cert('localhost', bundles['localhost']['subj'], context)
+    check_cert('example', bundles['localhost']['subj'], context)
 
 def test_tls_sni_empty_cn():
     bundles = {"localhost": {"alt_names": ["alt.localhost.com"]}}
-    config_bundles(bundles)
+    context = config_bundles(bundles)
     add_tls(["localhost"])
 
     resp, sock = client.get_ssl(
@@ -271,6 +276,7 @@ def test_tls_sni_empty_cn():
             'Connection': 'close',
         },
         start=True,
+        context=context,
     )
 
     assert resp['status'] == 200
@@ -279,7 +285,7 @@ def test_tls_sni_empty_cn():
     )
 
 def test_tls_sni_invalid():
-    config_bundles({"localhost": {"subj": "subj1", "alt_names": ''}})
+    _ = config_bundles({"localhost": {"subj": "subj1", "alt_names": ''}})
     add_tls(["localhost"])
 
     def check_certificate(cert):
