@@ -11,10 +11,7 @@ prerequisites = {
 }
 
 
-client = ApplicationPython()
-
-
-load_module = 'asgi'
+client = ApplicationPython(load_module='asgi')
 
 ws = ApplicationWebsocket()
 

@@ -9,10 +9,7 @@ prerequisites = {
 }
 
 
-client = ApplicationPython()
-
-
-load_module = 'asgi'
+client = ApplicationPython(load_module='asgi')
 
 @pytest.fixture(autouse=True)
 def setup_method_fixture():

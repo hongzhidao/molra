@@ -10,10 +10,7 @@ prerequisites = {
 }
 
 
-client = ApplicationPython()
-
-
-load_module = 'asgi'
+client = ApplicationPython(load_module='asgi')
 
 def test_asgi_application_variables(date_to_sec_epoch, sec_epoch):
     client.load('variables')

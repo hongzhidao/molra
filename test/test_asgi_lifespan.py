@@ -10,10 +10,7 @@ prerequisites = {
 }
 
 
-client = ApplicationPython()
-
-
-load_module = 'asgi'
+client = ApplicationPython(load_module='asgi')
 
 def setup_cookies(prefix):
     base_dir = option.test_dir + '/python/lifespan/empty'
