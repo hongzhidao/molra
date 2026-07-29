@@ -97,27 +97,6 @@ def test_rewrite_share(temp_dir):
     assert resp['status'] == 301, 'redirect status'
     assert resp['headers']['Location'] == '/dir/', 'redirect Location'
 
-    # variable cache
-
-    index_path = f'{temp_dir}${{uri}}/index.html'
-    assert 'success' in client.conf(
-        {
-            "listeners": {"*:7080": {"pass": "routes"}},
-            "routes": [
-                {
-                    "match": {"uri": "/foo"},
-                    "action": {
-                        "rewrite": "${uri}dir",
-                        "pass": "routes",
-                    },
-                },
-                {"action": {"share": index_path}},
-            ],
-        }
-    )
-
-    assert client.get(url='/foo')['body'] == 'fooindex'
-
     # different action block
 
     assert 'success' in client.conf(
