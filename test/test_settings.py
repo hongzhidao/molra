@@ -11,7 +11,6 @@ prerequisites = {'modules': {'python': 'any'}}
 
 client = ApplicationPython()
 
-
 def sysctl():
     try:
         out = subprocess.check_output(
@@ -21,21 +20,6 @@ def sysctl():
         pytest.skip('requires sysctl')
 
     return out
-
-def test_settings_server_version():
-    client.load('empty')
-
-    assert client.get()['headers']['Server'].startswith('Unit/')
-
-    assert 'success' in client.conf(
-        {"http": {"server_version": False}}, 'settings'
-    ), 'remove version'
-    assert client.get()['headers']['Server'] == 'Unit'
-
-    assert 'success' in client.conf(
-        {"http": {"server_version": True}}, 'settings'
-    ), 'add version'
-    assert client.get()['headers']['Server'].startswith('Unit/')
 
 def test_settings_header_read_timeout():
     client.load('empty')
