@@ -899,6 +899,8 @@ nxt_unit_ready(nxt_unit_ctx_t *ctx, int ready_fd, uint32_t stream, int queue_fd)
 
     lib = nxt_container_of(ctx->unit, nxt_unit_impl_t, unit);
 
+    memset(&msg, 0, sizeof(msg));
+
     msg.stream = stream;
     msg.pid = lib->pid;
     msg.reply_port = 0;
@@ -3272,6 +3274,8 @@ nxt_unit_request_done(nxt_unit_request_info_t *req, int rc)
 skip_response_send:
 
     lib = nxt_container_of(req->unit, nxt_unit_impl_t, unit);
+
+    memset(&msg, 0, sizeof(msg));
 
     msg.stream = req_impl->stream;
     msg.pid = lib->pid;
