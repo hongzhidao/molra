@@ -157,7 +157,7 @@ nxt_clone_credential_map_set(nxt_task_t *task, const char* mapfile, pid_t pid,
         end = mapinfo + len;
 
         for (i = 0; i < map->size; i++) {
-            p = nxt_sprintf(p, end, "%d %d %d", map->map[i].container,
+            p = nxt_sprintf(p, end, "%L %L %L", map->map[i].container,
                             map->map[i].host, map->map[i].size);
 
             if (nxt_slow_path(p == end)) {
@@ -257,7 +257,7 @@ nxt_int_t
 nxt_clone_vldt_credential_uidmap(nxt_task_t *task,
     nxt_clone_credential_map_t *map, nxt_credential_t *creds)
 {
-    nxt_int_t              id;
+    int64_t                id;
     nxt_uint_t             i;
     nxt_runtime_t          *rt;
     nxt_clone_map_entry_t  m;
@@ -281,7 +281,7 @@ nxt_clone_vldt_credential_uidmap(nxt_task_t *task,
 
         if (nxt_slow_path((nxt_uid_t) id != nxt_euid)) {
             nxt_log(task, NXT_LOG_NOTICE, "\"uidmap\" field has an entry for "
-                    "host uid %d but unprivileged unit can only map itself "
+                    "host uid %L but unprivileged unit can only map itself "
                     "(uid %d) into child namespaces.", id, nxt_euid);
 
             return NXT_ERROR;
@@ -346,7 +346,7 @@ nxt_clone_vldt_credential_gidmap(nxt_task_t *task,
 
         if (nxt_slow_path((nxt_gid_t) m.host != nxt_egid)) {
             nxt_log(task, NXT_LOG_ERR, "\"gidmap\" field has an entry for "
-                    "host gid %d but unprivileged unit can only map itself "
+                    "host gid %L but unprivileged unit can only map itself "
                     "(gid %d) into child namespaces.", m.host, nxt_egid);
 
             return NXT_ERROR;
@@ -354,7 +354,7 @@ nxt_clone_vldt_credential_gidmap(nxt_task_t *task,
 
         if (nxt_slow_path(m.size > 1)) {
             nxt_log(task, NXT_LOG_ERR, "\"gidmap\" field has an entry with "
-                    "\"size\": %d, but for unprivileged unit it must be 1.",
+                    "\"size\": %L, but for unprivileged unit it must be 1.",
                     m.size);
 
             return NXT_ERROR;
