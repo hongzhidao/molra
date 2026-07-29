@@ -46,7 +46,9 @@ class ApplicationGo(ApplicationProto):
             print("\n$ GOPATH=" + env['GOPATH'] + " " + " ".join(args))
 
         try:
-            process = subprocess.run(args, env=env)
+            output = subprocess.check_output(
+                args, env=env, stderr=subprocess.STDOUT
+            )
 
         except KeyboardInterrupt:
             raise
@@ -54,7 +56,7 @@ class ApplicationGo(ApplicationProto):
         except subprocess.CalledProcessError:
             return None
 
-        return process
+        return output
 
     def load(self, script, name='app', **kwargs):
         static_build = False
