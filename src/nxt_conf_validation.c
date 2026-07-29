@@ -211,7 +211,7 @@ static nxt_int_t nxt_conf_vldt_access_log(nxt_conf_validation_t *vldt,
 static nxt_int_t nxt_conf_vldt_access_log_format(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_access_log_format_field(
-    nxt_conf_validation_t *vldt, const nxt_str_t *name,
+    nxt_conf_validation_t *vldt, nxt_str_t *name,
     nxt_conf_value_t *value);
 
 static nxt_int_t nxt_conf_vldt_isolation(nxt_conf_validation_t *vldt,
@@ -3329,7 +3329,7 @@ static nxt_int_t
 nxt_conf_vldt_access_log_format(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data)
 {
-    static const nxt_str_t  format = nxt_string("format");
+    static nxt_str_t  format = nxt_string("format");
 
     if (nxt_conf_type(value) == NXT_CONF_OBJECT) {
         return nxt_conf_vldt_object_iterator(vldt, value,
@@ -3344,7 +3344,7 @@ nxt_conf_vldt_access_log_format(nxt_conf_validation_t *vldt,
 
 static nxt_int_t
 nxt_conf_vldt_access_log_format_field(nxt_conf_validation_t *vldt,
-    const nxt_str_t *name, nxt_conf_value_t *value)
+    nxt_str_t *name, nxt_conf_value_t *value)
 {
     nxt_str_t  str;
 
