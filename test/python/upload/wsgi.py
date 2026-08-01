@@ -1,4 +1,5 @@
-import cgi
+from email.parser import BytesFeedParser
+from email.policy import default
 from tempfile import TemporaryFile
 
 
@@ -16,10 +17,23 @@ def read(environ):
 def application(environ, start_response):
     file = read(environ)
 
-    form = cgi.FieldStorage(fp=file, environ=environ, keep_blank_values=True)
+    parser = BytesFeedParser(policy=default)
+    headers = 'Content-Type: %s\r\nMIME-Version: 1.0\r\n\r\n'
+    parser.feed((headers % environ['CONTENT_TYPE']).encode())
 
-    filename = form['file'].filename
-    data = filename.encode() + form['file'].file.read()
+    while True:
+        chunk = file.read(8192)
+
+        if not chunk:
+            break
+
+        parser.feed(chunk)
+
+    message = parser.close()
+    part = next(item for item in message.walk() if item.get_filename())
+
+    filename = part.get_filename()
+    data = filename.encode() + part.get_payload(decode=True)
 
     start_response(
         '200 OK',

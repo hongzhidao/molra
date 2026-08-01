@@ -28,13 +28,13 @@ def test_php_isolation_rootfs(is_su, require, temp_dir):
             'pid': True,
         }
 
-    client.load('phpinfo', isolation=isolation)
+    client.load('empty', isolation=isolation)
 
     assert 'success' in client.conf(
-        '"/app/php/phpinfo"', 'applications/phpinfo/root'
+        '"/app/php/empty"', 'applications/empty/root'
     )
     assert 'success' in client.conf(
-        '"/app/php/phpinfo"', 'applications/phpinfo/working_directory'
+        '"/app/php/empty"', 'applications/empty/working_directory'
     )
 
     assert client.get()['status'] == 200, 'empty rootfs'
