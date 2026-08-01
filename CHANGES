@@ -1,4 +1,19 @@
 
+Changes with Unit 1.27.0                                         01 Aug 2026
+
+    *) Change: selected fixes and features from later Unit releases were
+       backported while preserving the Unit 1.26 architecture.
+
+    *) Feature: request IDs, conditional route matching, configurable
+       response headers, and JSON-formatted access logs.
+
+    *) Bugfix: stability and correctness fixes in HTTP processing, routing,
+       static file handling, application lifecycle, logging, and sockets.
+
+    *) Bugfix: compatibility fixes for recent PHP and Python versions,
+       operating systems, toolchains, and packaging environments.
+
+
 Changes with Unit 1.26.1                                         02 Dec 2021
 
     *) Bugfix: occasionally, the Unit daemon was unable to fully terminate;
@@ -859,4 +874,3 @@ Changes with Unit 0.2                                            19 Oct 2017
 Changes with Unit 0.1                                            06 Sep 2017
 
     *) First public release.
-
