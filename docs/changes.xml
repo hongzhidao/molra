@@ -35,6 +35,12 @@ Java application support has been removed.
 </para>
 </change>
 
+<change type="change">
+<para>
+Node.js application support has been removed.
+</para>
+</change>
+
 </changes>
 
 
