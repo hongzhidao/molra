@@ -2053,7 +2053,7 @@ nxt_http_route_scheme(nxt_http_request_t *r, nxt_http_route_rule_t *rule)
     pattern_slice = rule->pattern[0].u.pattern_slices->elts;
     https = (pattern_slice->length == nxt_length("https"));
 
-    return (r->tls == https);
+    return (r->https == https);
 }
 
 

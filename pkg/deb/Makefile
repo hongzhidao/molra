@@ -14,7 +14,7 @@ SRCDIR=	unit-$(VERSION)
 
 CODENAME = $(shell lsb_release -cs)
 
-BUILD_DEPENDS_unit = build-essential debhelper devscripts fakeroot libxml2-utils lintian lsb-release xsltproc libssl-dev
+BUILD_DEPENDS_unit = build-essential debhelper devscripts fakeroot libxml2-utils lintian lsb-release xsltproc
 BUILD_DEPENDS = $(BUILD_DEPENDS_unit)
 
 MODULES=
@@ -73,8 +73,7 @@ CONFIGURE_ARGS_COMMON=\
 	--tmp=/var/tmp \
 	--user=unit \
 	--group=unit \
-	--tests \
-	--openssl
+	--tests
 
 CONFIGURE_ARGS=\
 	$(CONFIGURE_ARGS_COMMON) \

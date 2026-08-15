@@ -514,17 +514,17 @@ nxt_http_request_forward_protocol(nxt_http_request_t *r,
 {
     if (field->value_length == 4) {
         if (nxt_memcasecmp(field->value, "http", 4) == 0) {
-            r->tls = 0;
+            r->https = 0;
         }
 
     } else if (field->value_length == 5) {
         if (nxt_memcasecmp(field->value, "https", 5) == 0) {
-            r->tls = 1;
+            r->https = 1;
         }
 
     } else if (field->value_length == 2) {
         if (nxt_memcasecmp(field->value, "on", 2) == 0) {
-            r->tls = 1;
+            r->https = 1;
         }
     }
 }

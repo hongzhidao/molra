@@ -10,7 +10,7 @@ LABEL org.opencontainers.image.version="@@VERSION@@"
 
 RUN set -ex \
     && apt-get update \
-    && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates mercurial build-essential libssl-dev libpcre2-dev \
+    && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates mercurial build-essential libpcre2-dev \
     && mkdir -p /usr/lib/unit/modules /usr/lib/unit/debug-modules \
     && hg clone -u @@VERSION@@-@@PATCHLEVEL@@ https://hg.nginx.org/unit \
     && cd unit \
@@ -26,7 +26,6 @@ RUN set -ex \
                 --tmp=/var/tmp \
                 --user=unit \
                 --group=unit \
-                --openssl \
                 --libdir=/usr/lib/$DEB_HOST_MULTIARCH" \
     && ./configure $CONFIGURE_ARGS --cc-opt="$CC_OPT" --ld-opt="$LD_OPT" --modules=/usr/lib/unit/debug-modules --debug \
     && make -j $NCPU unitd \

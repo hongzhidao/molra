@@ -612,7 +612,7 @@ nxt_python_get_environ(nxt_python_ctx_t *pctx)
     RC(nxt_python_add_sptr(pctx, nxt_py_server_port_str, &r->local_port,
                            r->local_port_length));
 
-    if (r->tls) {
+    if (r->https) {
         RC(nxt_python_add_obj(pctx, nxt_py_wsgi_uri_scheme_str,
                               nxt_py_https_str));
     } else {

@@ -41,12 +41,6 @@ if [ "$1" = "unitd" -o "$1" = "unitd-debug" ]; then
             # this curl call will get a reply once unit is fully launched
             /usr/bin/curl -f -s -X GET --unix-socket /var/run/control.unit.sock http://localhost/
 
-            echo "$0: Looking for certificate bundles in /docker-entrypoint.d/..."
-            for f in $(/usr/bin/find /docker-entrypoint.d/ -type f -name "*.pem"); do
-                echo "$0: Uploading certificates bundle: $f"
-                curl_put $f "certificates/$(basename $f .pem)"
-            done
-
             echo "$0: Looking for configuration snippets in /docker-entrypoint.d/..."
             for f in $(/usr/bin/find /docker-entrypoint.d/ -type f -name "*.json"); do
                 echo "$0: Applying configuration $f";
