@@ -86,8 +86,6 @@ static void nxt_h1p_peer_connect(nxt_task_t *task, nxt_http_peer_t *peer);
 static void nxt_h1p_peer_connected(nxt_task_t *task, void *obj, void *data);
 static void nxt_h1p_peer_refused(nxt_task_t *task, void *obj, void *data);
 static void nxt_h1p_peer_header_send(nxt_task_t *task, nxt_http_peer_t *peer);
-static nxt_int_t nxt_h1p_peer_request_target(nxt_http_request_t *r,
-    nxt_str_t *target);
 static void nxt_h1p_peer_header_sent(nxt_task_t *task, void *obj, void *data);
 static void nxt_h1p_peer_header_read(nxt_task_t *task, nxt_http_peer_t *peer);
 static ssize_t nxt_h1p_peer_io_read_handler(nxt_task_t *task, nxt_conn_t *c);
@@ -2059,7 +2057,6 @@ nxt_h1p_peer_header_send(nxt_task_t *task, nxt_http_peer_t *peer)
 {
     u_char              *p;
     size_t              size;
-    nxt_int_t           ret;
     nxt_str_t           target;
     nxt_buf_t           *header, *body;
     nxt_conn_t          *c;
@@ -2069,11 +2066,7 @@ nxt_h1p_peer_header_send(nxt_task_t *task, nxt_http_peer_t *peer)
     nxt_debug(task, "h1p peer header send");
 
     r = peer->request;
-
-    ret = nxt_h1p_peer_request_target(r, &target);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        goto fail;
-    }
+    target = r->target;
 
     size = r->method->length + sizeof(" ") + target.length
            + sizeof(" HTTP/1.1\r\n")
@@ -2160,55 +2153,6 @@ nxt_h1p_peer_header_send(nxt_task_t *task, nxt_http_peer_t *peer)
 fail:
 
     r->state->error_handler(task, r, peer);
-}
-
-
-static nxt_int_t
-nxt_h1p_peer_request_target(nxt_http_request_t *r, nxt_str_t *target)
-{
-    u_char  *p;
-    size_t  size, encode;
-
-    if (!r->uri_changed) {
-        *target = r->target;
-        return NXT_OK;
-    }
-
-    if (!r->quoted_target && r->args->length == 0) {
-        *target = *r->path;
-        return NXT_OK;
-    }
-
-    if (r->quoted_target) {
-        encode = nxt_encode_complex_uri(NULL, r->path->start,
-                                        r->path->length);
-    } else {
-        encode = 0;
-    }
-
-    size = r->path->length + encode * 2 + 1 + r->args->length;
-
-    target->start = nxt_mp_nget(r->mem_pool, size);
-    if (target->start == NULL) {
-        return NXT_ERROR;
-    }
-
-    if (r->quoted_target) {
-        p = (u_char *) nxt_encode_complex_uri(target->start, r->path->start,
-                                              r->path->length);
-
-    } else {
-        p = nxt_cpymem(target->start, r->path->start, r->path->length);
-    }
-
-    if (r->args->length > 0) {
-        *p++ = '?';
-        p = nxt_cpymem(p, r->args->start, r->args->length);
-    }
-
-    target->length = p - target->start;
-
-    return NXT_OK;
 }
 
 

@@ -143,7 +143,6 @@ struct nxt_http_request_s {
     nxt_str_t                       host;
     nxt_str_t                       server_name;
     nxt_str_t                       target;
-    nxt_str_t                       original_target;
     nxt_str_t                       version;
     nxt_str_t                       *method;
     nxt_str_t                       *path;
@@ -187,7 +186,6 @@ struct nxt_http_request_s {
     nxt_http_status_t               status:16;
 
     uint8_t                         quoted_target;  /* 1 bit */
-    uint8_t                         uri_changed;  /* 1 bit */
 
     uint8_t                         pass_count;   /* 8 bits */
     uint8_t                         app_target;
@@ -223,7 +221,6 @@ typedef struct nxt_http_route_addr_rule_s  nxt_http_route_addr_rule_t;
 
 
 typedef struct {
-    nxt_conf_value_t                *rewrite;
     nxt_conf_value_t                *set_headers;
     nxt_conf_value_t                *pass;
     nxt_conf_value_t                *ret;
@@ -250,7 +247,6 @@ struct nxt_http_action_s {
         nxt_str_t                   *pass;
     } u;
 
-    nxt_str_t                       *rewrite;
     nxt_array_t                     *set_headers;  /* of nxt_http_field_t */
     nxt_http_action_t               *fallback;
 };
@@ -376,10 +372,6 @@ nxt_int_t nxt_upstreams_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     nxt_conf_value_t *conf);
 nxt_int_t nxt_upstreams_joint_create(nxt_router_temp_conf_t *tmcf,
     nxt_upstream_t ***upstream_joint);
-
-nxt_int_t nxt_http_rewrite_init(nxt_router_conf_t *rtcf,
-    nxt_http_action_t *action, nxt_http_action_conf_t *acf);
-nxt_int_t nxt_http_rewrite(nxt_task_t *task, nxt_http_request_t *r);
 
 nxt_int_t nxt_http_set_headers_init(nxt_router_conf_t *rtcf,
     nxt_http_action_t *action, nxt_http_action_conf_t *acf);

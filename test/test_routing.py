@@ -496,6 +496,13 @@ def test_routes_action_unique(temp_dir):
         {"share": temp_dir, "pass": "applications/app"}, 'routes/0/action',
     ), 'share pass'
 
+
+def test_routes_action_rewrite_invalid():
+    assert 'error' in client.conf(
+        {"rewrite": "/new", "return": 200}, 'routes/0/action'
+    ), 'rewrite unsupported'
+
+
 def test_routes_rules_two():
     assert 'success' in client.conf(
         [
