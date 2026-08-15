@@ -19,7 +19,7 @@
 .Nm
 .Op Fl h | Fl Fl help | v | Fl Fl version
 .Sh DESCRIPTION
-NGINX Unit is a polyglot app server, a reverse proxy, and a static file server
+NGINX Unit is a polyglot app server and a reverse proxy
 for UNIX-like systems.
 It was built by
 .Xr nginx 8

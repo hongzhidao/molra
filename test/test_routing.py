@@ -465,7 +465,7 @@ def test_routes_route_pass_invalid():
         [{"action": {"pass": "upstreams/blah"}}], 'routes'
     ), 'route pass upstreams invalid'
 
-def test_routes_action_unique(temp_dir):
+def test_routes_action_unique():
     assert 'success' in client.conf(
         {
             "listeners": {
@@ -485,16 +485,15 @@ def test_routes_action_unique(temp_dir):
     )
 
     assert 'error' in client.conf(
-        {"proxy": "http://127.0.0.1:8081", "share": temp_dir},
-        'routes/0/action',
-    ), 'proxy share'
-    assert 'error' in client.conf(
         {"proxy": "http://127.0.0.1:8081", "pass": "applications/app",},
         'routes/0/action',
     ), 'proxy pass'
+
+
+def test_routes_action_share_invalid():
     assert 'error' in client.conf(
-        {"share": temp_dir, "pass": "applications/app"}, 'routes/0/action',
-    ), 'share pass'
+        {"share": "/tmp", "return": 200}, 'routes/0/action'
+    ), 'share unsupported'
 
 
 def test_routes_action_rewrite_invalid():

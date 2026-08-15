@@ -172,8 +172,6 @@ def test_return_invalid():
     check_error({"return": 80.1})
     check_error({"return": 1000})
     check_error({"return": -1})
-    check_error({"return": 200, "share": "/blah"})
-
     assert 'error' in client.conf(
         '001', 'routes/0/action/return'
     ), 'leading zero'
