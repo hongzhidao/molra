@@ -23,9 +23,7 @@ NXT_LIB_SRCS=" \
     src/nxt_port_memory.c \
     src/nxt_port_rpc.c \
     src/nxt_port.c \
-    src/nxt_dyld.c \
     src/nxt_random.c \
-    src/nxt_queue.c \
     src/nxt_rbtree.c \
     src/nxt_mp.c \
     src/nxt_string.c \
@@ -40,12 +38,10 @@ NXT_LIB_SRCS=" \
     src/nxt_array.c \
     src/nxt_list.c \
     src/nxt_buf.c \
-    src/nxt_buf_pool.c \
     src/nxt_recvbuf.c \
     src/nxt_sendbuf.c \
     src/nxt_thread.c \
     src/nxt_thread_mutex.c \
-    src/nxt_thread_cond.c \
     src/nxt_spinlock.c \
     src/nxt_thread_time.c \
     src/nxt_time_parse.c \

@@ -115,15 +115,6 @@ NXT_EXPORT nxt_bool_t nxt_thread_mutex_trylock(nxt_thread_mutex_t *mtx);
 NXT_EXPORT nxt_int_t nxt_thread_mutex_unlock(nxt_thread_mutex_t *mtx);
 
 
-typedef pthread_cond_t       nxt_thread_cond_t;
-
-NXT_EXPORT nxt_int_t nxt_thread_cond_create(nxt_thread_cond_t *cond);
-NXT_EXPORT void nxt_thread_cond_destroy(nxt_thread_cond_t *cond);
-NXT_EXPORT nxt_int_t nxt_thread_cond_signal(nxt_thread_cond_t *cond);
-NXT_EXPORT nxt_err_t nxt_thread_cond_wait(nxt_thread_cond_t *cond,
-    nxt_thread_mutex_t *mtx, nxt_nsec_t timeout);
-
-
 #if (NXT_HAVE_PTHREAD_YIELD)
 #define                                                                       \
 nxt_thread_yield()                                                            \

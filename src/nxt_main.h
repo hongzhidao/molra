@@ -74,7 +74,6 @@ typedef struct nxt_sockaddr_s           nxt_sockaddr_t;
 #include <nxt_malloc.h>
 #include <nxt_mem_map.h>
 #include <nxt_socket.h>
-#include <nxt_dyld.h>
 
 
 typedef void *(*nxt_mem_proto_alloc_t)(void *pool, size_t size);
@@ -98,7 +97,6 @@ typedef struct {
 
 typedef struct nxt_buf_s                nxt_buf_t;
 #include <nxt_buf.h>
-#include <nxt_buf_pool.h>
 #include <nxt_recvbuf.h>
 
 typedef struct nxt_conn_s               nxt_conn_t;
