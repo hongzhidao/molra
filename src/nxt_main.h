@@ -152,8 +152,6 @@ typedef void (*nxt_event_conn_handler_t)(nxt_thread_t *thr, nxt_conn_t *c);
 #include <nxt_job_resolve.h>
 #include <nxt_sockaddr.h>
 
-#include <nxt_cache.h>
-
 #include <nxt_http_parse.h>
 #include <nxt_runtime.h>
 #include <nxt_port_hash.h>
