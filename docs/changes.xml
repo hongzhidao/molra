@@ -10,7 +10,6 @@
                 unit-python3.4 unit-python3.5 unit-python3.6 unit-python3.7
                 unit-python3.8 unit-python3.9 unit-python3.10
                 unit-go
-                unit-perl
                 unit-ruby"
          ver="1.28.0" rev="1"
          date="" time=""
@@ -38,6 +37,12 @@ Java application support has been removed.
 <change type="change">
 <para>
 Node.js application support has been removed.
+</para>
+</change>
+
+<change type="change">
+<para>
+Perl application support has been removed.
 </para>
 </change>
 

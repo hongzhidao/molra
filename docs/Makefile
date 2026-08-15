@@ -10,7 +10,6 @@ PACKAGES=	unit 							\
 		unit-python3.8 unit-python3.9				\
 		unit-go unit-go1.7 unit-go1.8 unit-go1.9 unit-go1.10	\
 		unit-go1.12 unit-go1.13					\
-		unit-perl						\
 		unit-ruby
 
 CURDATE:=$(shell date +"%Y-%m-%d")
