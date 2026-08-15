@@ -10,7 +10,7 @@ PATCHLEVEL ?= 1
 
 EXPORT_DIR := $(VERSION)
 
-MODULES ?= go php python ruby
+MODULES ?= go php python
 
 VARIANT ?= bullseye
 
@@ -45,13 +45,6 @@ $(foreach pythonversion, $(VERSIONS_python), $(eval CONTAINER_python$(pythonvers
 CONFIGURE_python ?=	python --config=/usr/local/bin/python3-config
 INSTALL_python ?=	python3-install
 COPY_python =
-
-VERSIONS_ruby ?=	3.0
-VARIANT_ruby ?=		$(VARIANT)
-$(foreach rubyversion, $(VERSIONS_ruby), $(eval CONTAINER_ruby$(rubyversion) = ruby:$(rubyversion)-$(VARIANT_ruby)))
-CONFIGURE_ruby ?=	ruby
-INSTALL_ruby ?=		ruby-install
-COPY_ruby =			RUN gem install rack
 
 default:
 	@echo "valid targets: all build dockerfiles push tag export clean"

@@ -958,24 +958,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_php_notargets_members[] = {
 };
 
 
-static nxt_conf_vldt_object_t  nxt_conf_vldt_ruby_members[] = {
-    {
-        .name       = nxt_string("script"),
-        .type       = NXT_CONF_VLDT_STRING,
-        .flags      = NXT_CONF_VLDT_REQUIRED,
-    }, {
-        .name       = nxt_string("threads"),
-        .type       = NXT_CONF_VLDT_INTEGER,
-        .validator  = nxt_conf_vldt_threads,
-    }, {
-        .name       = nxt_string("hooks"),
-        .type       = NXT_CONF_VLDT_STRING
-    },
-
-    NXT_CONF_VLDT_NEXT(nxt_conf_vldt_common_members)
-};
-
-
 static nxt_conf_vldt_object_t  nxt_conf_vldt_common_members[] = {
     {
         .name       = nxt_string("type"),
@@ -2470,7 +2452,6 @@ nxt_conf_vldt_app(nxt_conf_validation_t *vldt, nxt_str_t *name,
         { nxt_conf_vldt_object, nxt_conf_vldt_external_members },
         { nxt_conf_vldt_python, NULL },
         { nxt_conf_vldt_php,    NULL },
-        { nxt_conf_vldt_object, nxt_conf_vldt_ruby_members },
     };
 
     ret = nxt_conf_vldt_type(vldt, name, value, NXT_CONF_VLDT_OBJECT);

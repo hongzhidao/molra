@@ -26,7 +26,6 @@ include Makefile.python27
 include Makefile.python39
 include Makefile.python310
 include Makefile.go
-include Makefile.ruby
 endif
 
 # Ubuntu 21.04
@@ -35,7 +34,6 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python39
 include Makefile.go
-include Makefile.ruby
 endif
 
 # Ubuntu 20.04
@@ -44,7 +42,6 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python38
 include Makefile.go
-include Makefile.ruby
 endif
 
 # Ubuntu 18.04
@@ -55,7 +52,6 @@ include Makefile.python36
 include Makefile.python37
 include Makefile.python38
 include Makefile.go
-include Makefile.ruby
 endif
 
 # Debian 11
@@ -64,7 +60,6 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python39
 include Makefile.go
-include Makefile.ruby
 endif
 
 # Debian 10
@@ -73,7 +68,6 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python37
 include Makefile.go
-include Makefile.ruby
 endif
 
 CONFIGURE_ARGS_COMMON=\

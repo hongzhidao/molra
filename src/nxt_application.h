@@ -18,7 +18,6 @@ typedef enum {
     NXT_APP_EXTERNAL,
     NXT_APP_PYTHON,
     NXT_APP_PHP,
-    NXT_APP_RUBY,
 
     NXT_APP_UNKNOWN,
 } nxt_app_type_t;
@@ -62,13 +61,6 @@ typedef struct {
 } nxt_php_app_conf_t;
 
 
-typedef struct {
-    nxt_str_t  script;
-    uint32_t   threads;
-    nxt_str_t  hooks;
-} nxt_ruby_app_conf_t;
-
-
 struct nxt_common_app_conf_s {
     nxt_str_t                  name;
     nxt_str_t                  type;
@@ -88,7 +80,6 @@ struct nxt_common_app_conf_s {
         nxt_external_app_conf_t  external;
         nxt_python_app_conf_t    python;
         nxt_php_app_conf_t       php;
-        nxt_ruby_app_conf_t      ruby;
     } u;
 
     nxt_conf_value_t           *self;

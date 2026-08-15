@@ -96,7 +96,6 @@ ifeq ($(OSVER), opensuse-leap)
 include Makefile.python27
 include Makefile.python34
 include Makefile.go
-include Makefile.ruby
 endif
 
 ifeq ($(OSVER), opensuse-tumbleweed)
@@ -104,7 +103,6 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python36
 include Makefile.go
-include Makefile.ruby
 endif
 
 ifeq ($(OSVER), sles)
@@ -129,7 +127,6 @@ else
 include Makefile.python36
 endif
 include Makefile.go
-include Makefile.ruby
 endif
 
 ifeq ($(OSVER), fedora41)

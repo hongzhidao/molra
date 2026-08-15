@@ -2,7 +2,6 @@ import json
 import os
 
 from unit.applications.lang.go import ApplicationGo
-from unit.applications.lang.ruby import ApplicationRuby
 from unit.http import HTTP1
 from unit.option import option
 from unit.utils import getns
@@ -56,22 +55,6 @@ def check_isolation():
                     "root": option.test_dir + "/php/phpinfo",
                     "working_directory": option.test_dir + "/php/phpinfo",
                     "index": "index.php",
-                    "isolation": {"namespaces": {"credential": True}},
-                }
-            },
-        }
-
-    elif 'ruby' in available['modules']:
-        ApplicationRuby().prepare_env('empty')
-
-        conf = {
-            "listeners": {"*:8080": {"pass": "applications/empty"}},
-            "applications": {
-                "empty": {
-                    "type": "ruby",
-                    "processes": {"spare": 0},
-                    "working_directory": option.temp_dir + "/ruby/empty",
-                    "script": option.temp_dir + "/ruby/empty/config.ru",
                     "isolation": {"namespaces": {"credential": True}},
                 }
             },
