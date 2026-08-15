@@ -74,10 +74,6 @@ main(int argc, char **argv)
         return 1;
     }
 
-    if (nxt_term_parse_test(thr) != NXT_OK) {
-        return 1;
-    }
-
     if (nxt_msec_diff_test(thr, nxt_msec_less) != NXT_OK) {
         return 1;
     }

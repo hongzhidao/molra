@@ -33,7 +33,6 @@ nxt_rdtsc(void)
 #endif
 
 
-nxt_int_t nxt_term_parse_test(nxt_thread_t *thr);
 nxt_int_t nxt_msec_diff_test(nxt_thread_t *thr, nxt_msec_less_t);
 
 nxt_int_t nxt_rbtree_test(nxt_thread_t *thr, nxt_uint_t n);

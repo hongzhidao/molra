@@ -44,7 +44,6 @@ NXT_LIB_SRCS=" \
     src/nxt_thread_mutex.c \
     src/nxt_spinlock.c \
     src/nxt_thread_time.c \
-    src/nxt_time_parse.c \
     src/nxt_work_queue.c \
     src/nxt_service.c \
     src/nxt_log_moderation.c \
@@ -104,7 +103,6 @@ NXT_TEST_SRCS=" \
     src/test/nxt_tests.c \
     src/test/nxt_rbtree1.c \
     src/test/nxt_rbtree_test.c \
-    src/test/nxt_term_parse_test.c \
     src/test/nxt_msec_diff_test.c \
     src/test/nxt_mp_test.c \
     src/test/nxt_lvlhsh_test.c \
