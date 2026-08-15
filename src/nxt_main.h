@@ -86,7 +86,6 @@ typedef struct {
 } nxt_mem_proto_t;
 
 
-#include <nxt_mem_zone.h>
 #include <nxt_signal.h>
 #include <nxt_djb_hash.h>
 #include <nxt_murmur_hash.h>
