@@ -22,7 +22,7 @@ def setup_method_fixture(temp_dir):
                 "*:8080": {"pass": "routes"},
                 "*:8081": {"pass": "routes"},
             },
-            "routes": [{"action": {"share": temp_dir + "/assets$uri"}}],
+            "routes": [{"action": {"share": temp_dir + "/assets"}}],
             "applications": {},
         }
     )
@@ -49,7 +49,7 @@ def test_static_fallback():
 
 def test_static_fallback_valid_path(temp_dir):
     action_update(
-        {"share": temp_dir + "/assets$uri", "fallback": {"return": 200}}
+        {"share": temp_dir + "/assets", "fallback": {"return": 200}}
     )
     resp = client.get()
     assert resp['status'] == 200, 'fallback status'
@@ -82,7 +82,7 @@ def test_static_fallback_nested():
 
 def test_static_fallback_share(temp_dir):
     action_update(
-        {"share": "/blah", "fallback": {"share": temp_dir + "/assets$uri"},}
+        {"share": "/blah", "fallback": {"share": temp_dir + "/assets"},}
     )
 
     resp = client.get()

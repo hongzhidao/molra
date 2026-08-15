@@ -19,7 +19,7 @@ def setup_method_fixture(temp_dir):
     client._load_conf(
         {
             "listeners": {"*:8080": {"pass": "routes"}},
-            "routes": [{"action": {"share": temp_dir + "/assets$uri"}}],
+            "routes": [{"action": {"share": temp_dir + "/assets"}}],
         }
     )
 
@@ -34,14 +34,14 @@ def test_static_symlink(temp_dir, skip_alert):
     assert client.get(url='/link/file')['status'] == 200, 'symlink file'
 
     assert 'success' in client.conf(
-        {"share": temp_dir + "/assets$uri", "follow_symlinks": False},
+        {"share": temp_dir + "/assets", "follow_symlinks": False},
         'routes/0/action',
     ), 'configure symlink disable'
 
     assert client.get(url='/link/file')['status'] == 403, 'symlink disabled'
 
     assert 'success' in client.conf(
-        {"share": temp_dir + "/assets$uri", "follow_symlinks": True},
+        {"share": temp_dir + "/assets", "follow_symlinks": True},
         'routes/0/action',
     ), 'configure symlink enable'
 
@@ -57,14 +57,14 @@ def test_static_symlink_two_blocks(temp_dir, skip_alert):
             {
                 "match": {"method": "HEAD"},
                 "action": {
-                    "share": temp_dir + "/assets$uri",
+                    "share": temp_dir + "/assets",
                     "follow_symlinks": False,
                 },
             },
             {
                 "match": {"method": "GET"},
                 "action": {
-                    "share": temp_dir + "/assets$uri",
+                    "share": temp_dir + "/assets",
                     "follow_symlinks": True,
                 },
             },
@@ -86,7 +86,7 @@ def test_static_symlink_chroot(temp_dir, skip_alert):
 
     assert 'success' in client.conf(
         {
-            "share": temp_dir + "/assets$uri",
+            "share": temp_dir + "/assets",
             "chroot": temp_dir + "/assets/dir/dir",
         },
         'routes/0/action',

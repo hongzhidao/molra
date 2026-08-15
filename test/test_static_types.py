@@ -21,7 +21,7 @@ def setup_method_fixture(temp_dir):
                 "*:8080": {"pass": "routes"},
                 "*:8081": {"pass": "routes"},
             },
-            "routes": [{"action": {"share": temp_dir + "/assets$uri"}}],
+            "routes": [{"action": {"share": temp_dir + "/assets"}}],
             "applications": {},
         }
     )
@@ -35,39 +35,39 @@ def check_body(http_url, body):
     assert resp['body'] == body, 'body'
 
 def test_static_types_basic(temp_dir):
-    action_update({"share": temp_dir + "/assets$uri"})
+    action_update({"share": temp_dir + "/assets"})
     check_body('/index.html', 'index')
     check_body('/file.xml', '.xml')
 
     action_update(
-        {"share": temp_dir + "/assets$uri", "types": "application/xml"}
+        {"share": temp_dir + "/assets", "types": "application/xml"}
     )
     check_body('/file.xml', '.xml')
 
     action_update(
-        {"share": temp_dir + "/assets$uri", "types": ["application/xml"]}
+        {"share": temp_dir + "/assets", "types": ["application/xml"]}
     )
     check_body('/file.xml', '.xml')
 
-    action_update({"share": temp_dir + "/assets$uri", "types": [""]})
+    action_update({"share": temp_dir + "/assets", "types": [""]})
     assert client.get(url='/file.xml')['status'] == 403, 'no mtype'
 
 def test_static_types_wildcard(temp_dir):
     action_update(
-        {"share": temp_dir + "/assets$uri", "types": ["application/*"]}
+        {"share": temp_dir + "/assets", "types": ["application/*"]}
     )
     check_body('/file.xml', '.xml')
     assert client.get(url='/file.mp4')['status'] == 403, 'app * mtype mp4'
 
     action_update(
-        {"share": temp_dir + "/assets$uri", "types": ["video/*"]}
+        {"share": temp_dir + "/assets", "types": ["video/*"]}
     )
     assert client.get(url='/file.xml')['status'] == 403, 'video * mtype xml'
     check_body('/file.mp4', '.mp4')
 
 def test_static_types_negation(temp_dir):
     action_update(
-        {"share": temp_dir + "/assets$uri", "types": ["!application/xml"]}
+        {"share": temp_dir + "/assets", "types": ["!application/xml"]}
     )
     assert client.get(url='/file.xml')['status'] == 403, 'forbidden negation'
     check_body('/file.mp4', '.mp4')
@@ -75,7 +75,7 @@ def test_static_types_negation(temp_dir):
     # sorting negation
     action_update(
         {
-            "share": temp_dir + "/assets$uri",
+            "share": temp_dir + "/assets",
             "types": ["!video/*", "image/png", "!image/jpg"],
         }
     )
@@ -85,7 +85,7 @@ def test_static_types_negation(temp_dir):
 
 def test_static_types_regex(temp_dir):
     action_update(
-        {"share": temp_dir + "/assets$uri", "types": ["~text/(html|plain)"]}
+        {"share": temp_dir + "/assets", "types": ["~text/(html|plain)"]}
     )
     assert client.get(url='/file.php')['status'] == 403, 'regex fail'
     check_body('/file.html', '.html')
@@ -93,7 +93,7 @@ def test_static_types_regex(temp_dir):
 
 def test_static_types_case(temp_dir):
     action_update(
-        {"share": temp_dir + "/assets$uri", "types": ["!APpliCaTiOn/xMl"]}
+        {"share": temp_dir + "/assets", "types": ["!APpliCaTiOn/xMl"]}
     )
     check_body('/file.mp4', '.mp4')
     assert (
@@ -101,7 +101,7 @@ def test_static_types_case(temp_dir):
     ), 'mixed case xml negation'
 
     action_update(
-        {"share": temp_dir + "/assets$uri", "types": ["vIdEo/mp4"]}
+        {"share": temp_dir + "/assets", "types": ["vIdEo/mp4"]}
     )
     assert client.get(url='/file.mp4')['status'] == 200, 'mixed case'
     assert (
@@ -109,7 +109,7 @@ def test_static_types_case(temp_dir):
     ), 'mixed case video negation'
 
     action_update(
-        {"share": temp_dir + "/assets$uri", "types": ["vIdEo/*"]}
+        {"share": temp_dir + "/assets", "types": ["vIdEo/*"]}
     )
     check_body('/file.mp4', '.mp4')
     assert (
@@ -125,7 +125,7 @@ def test_static_types_fallback(temp_dir):
             },
             {
                 "action": {
-                    "share": temp_dir + "/assets$uri",
+                    "share": temp_dir + "/assets",
                     "types": ["!application/x-httpd-php"],
                     "fallback": {"proxy": "http://127.0.0.1:8081"},
                 }
@@ -139,7 +139,7 @@ def test_static_types_fallback(temp_dir):
 
 def test_static_types_index(temp_dir):
     action_update(
-        {"share": temp_dir + "/assets$uri", "types": "application/xml"}
+        {"share": temp_dir + "/assets", "types": "application/xml"}
     )
     check_body('/', 'index')
     check_body('/file.xml', '.xml')
@@ -150,7 +150,7 @@ def test_static_types_custom_mime(temp_dir):
     client._load_conf(
         {
             "listeners": {"*:8080": {"pass": "routes"}},
-            "routes": [{"action": {"share": temp_dir + "/assets$uri"}}],
+            "routes": [{"action": {"share": temp_dir + "/assets"}}],
             "applications": {},
             "settings": {
                 "http": {
@@ -160,10 +160,10 @@ def test_static_types_custom_mime(temp_dir):
         }
     )
 
-    action_update({"share": temp_dir + "/assets$uri", "types": [""]})
+    action_update({"share": temp_dir + "/assets", "types": [""]})
     assert client.get(url='/file')['status'] == 403, 'forbidden custom mime'
 
     action_update(
-        {"share": temp_dir + "/assets$uri", "types": ["test/mime-type"]}
+        {"share": temp_dir + "/assets", "types": ["test/mime-type"]}
     )
     check_body('/file', '')

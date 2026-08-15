@@ -27,7 +27,7 @@ def setup_method_fixture(temp_dir):
     client._load_conf(
         {
             "listeners": {"*:8080": {"pass": "routes"}},
-            "routes": [{"action": {"share": f'{assets_dir}$uri'}}],
+            "routes": [{"action": {"share": f'{assets_dir}'}}],
             "settings": {
                 "http": {
                     "static": {

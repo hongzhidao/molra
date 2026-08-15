@@ -19,7 +19,7 @@ def setup_method_fixture(temp_dir):
     assert 'success' in client.conf(
         {
             "listeners": {"*:8080": {"pass": "routes"}},
-            "routes": [{"action": {"share": temp_dir + "/assets$uri"}}],
+            "routes": [{"action": {"share": temp_dir + "/assets"}}],
             "applications": {},
         }
     )
@@ -31,7 +31,7 @@ def test_share_array(temp_dir):
     assert client.get(url='/dir/file')['body'] == '1'
     assert client.get(url='/dir2/file2')['body'] == '2'
 
-    action_update({"share": [temp_dir + "/assets/dir$uri"]})
+    action_update({"share": [temp_dir + "/assets/dir"]})
 
     assert client.get(url='/file')['body'] == '1'
     assert client.get(url='/file2')['status'] == 404
@@ -39,8 +39,8 @@ def test_share_array(temp_dir):
     action_update(
         {
             "share": [
-                temp_dir + "/assets/dir$uri",
-                temp_dir + "/assets/dir2$uri",
+                temp_dir + "/assets/dir",
+                temp_dir + "/assets/dir2",
             ]
         }
     )
@@ -51,8 +51,8 @@ def test_share_array(temp_dir):
     action_update(
         {
             "share": [
-                temp_dir + "/assets/dir2$uri",
-                temp_dir + "/assets/dir3$uri",
+                temp_dir + "/assets/dir2",
+                temp_dir + "/assets/dir3",
             ]
         }
     )

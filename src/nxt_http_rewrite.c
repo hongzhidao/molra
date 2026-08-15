@@ -12,14 +12,16 @@ nxt_int_t
 nxt_http_rewrite_init(nxt_router_conf_t *rtcf, nxt_http_action_t *action,
      nxt_http_action_conf_t *acf)
  {
-    nxt_str_t  str;
+    nxt_str_t  str, *rewrite;
 
     nxt_conf_get_string(acf->rewrite, &str);
 
-    action->rewrite = nxt_tstr_compile(rtcf->tstr_state, &str, 0);
-    if (nxt_slow_path(action->rewrite == NULL)) {
+    rewrite = nxt_str_dup(rtcf->mem_pool, NULL, &str);
+    if (nxt_slow_path(rewrite == NULL)) {
         return NXT_ERROR;
     }
+
+    action->rewrite = rewrite;
 
     return NXT_OK;
 }
@@ -31,7 +33,6 @@ nxt_http_rewrite(nxt_task_t *task, nxt_http_request_t *r)
     u_char                    *p;
     nxt_int_t                 ret;
     nxt_str_t                 str, encoded_path, target;
-    nxt_router_conf_t         *rtcf;
     nxt_http_action_t         *action;
     nxt_http_request_parse_t  rp;
 
@@ -41,23 +42,7 @@ nxt_http_rewrite(nxt_task_t *task, nxt_http_request_t *r)
         return NXT_OK;
     }
 
-    if (nxt_tstr_is_const(action->rewrite)) {
-        nxt_tstr_str(action->rewrite, &str);
-
-    } else {
-        rtcf = r->conf->socket_conf->router_conf;
-
-        ret = nxt_tstr_query_init(&r->tstr_query, rtcf->tstr_state,
-                                  &r->tstr_cache, r, r->mem_pool);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return NXT_ERROR;
-        }
-
-        ret = nxt_tstr_query(task, r->tstr_query, action->rewrite, &str);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            return NXT_ERROR;
-        }
-    }
+    str = *action->rewrite;
 
     nxt_memzero(&rp, sizeof(nxt_http_request_parse_t));
 

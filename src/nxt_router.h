@@ -22,7 +22,6 @@ typedef struct nxt_http_forward_s              nxt_http_forward_t;
 typedef struct nxt_upstream_s                  nxt_upstream_t;
 typedef struct nxt_upstreams_s                 nxt_upstreams_t;
 typedef struct nxt_router_access_log_s         nxt_router_access_log_t;
-typedef struct nxt_router_access_log_format_s  nxt_router_access_log_format_t;
 
 
 #define NXT_HTTP_ACTION_ERROR  ((nxt_http_action_t *) -1)
@@ -44,8 +43,6 @@ typedef struct {
     uint32_t                        threads;
 
     nxt_mp_t                        *mem_pool;
-    nxt_tstr_state_t                *tstr_state;
-
     nxt_router_t                    *router;
     nxt_http_routes_t               *routes;
     nxt_upstreams_t                 *upstreams;
@@ -53,9 +50,7 @@ typedef struct {
     nxt_lvlhsh_t                    mtypes_hash;
     nxt_lvlhsh_t                    apps_hash;
 
-    nxt_tstr_cond_t                 log_cond;
     nxt_router_access_log_t         *access_log;
-    nxt_router_access_log_format_t  *log_format;
 } nxt_router_conf_t;
 
 
@@ -72,10 +67,6 @@ typedef struct {
 
 
 typedef struct {
-#if (NXT_HAVE_NJS)
-    nxt_queue_t            js_modules;
-#endif
-
     nxt_queue_t            apps;       /* of nxt_app_t */
     nxt_queue_t            previous;   /* of nxt_app_t */
 
@@ -223,8 +214,7 @@ typedef struct {
 
 struct nxt_router_access_log_s {
     void                   (*handler)(nxt_task_t *task, nxt_http_request_t *r,
-                                      nxt_router_access_log_t *access_log,
-                                      nxt_router_access_log_format_t *format);
+                                      nxt_router_access_log_t *access_log);
     nxt_fd_t               fd;
     nxt_str_t              path;
     uint32_t               count;

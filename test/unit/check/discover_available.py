@@ -3,7 +3,6 @@ import sys
 
 from unit.check.chroot import check_chroot
 from unit.check.isolation import check_isolation
-from unit.check.njs import check_njs
 from unit.check.regex import check_regex
 from unit.log import Log
 from unit.option import option
@@ -29,7 +28,6 @@ def discover_available(unit):
 
     # discover modules using check
 
-    option.available['modules']['njs'] = check_njs(output_version)
     option.available['modules']['regex'] = check_regex(output_version)
 
     # Discover features using check. Features should be discovered after

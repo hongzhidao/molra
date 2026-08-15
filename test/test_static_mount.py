@@ -41,7 +41,7 @@ def setup_method_fixture(temp_dir):
         {
             "listeners": {"*:8080": {"pass": "routes"}},
             "routes": [
-                {"action": {"share": temp_dir + "/assets/dir$uri"}}
+                {"action": {"share": temp_dir + "/assets/dir"}}
             ],
         }
     )
@@ -68,14 +68,14 @@ def test_static_mount(temp_dir, skip_alert):
     assert resp['body'] == 'mount'
 
     assert 'success' in client.conf(
-        {"share": temp_dir + "/assets/dir$uri", "traverse_mounts": False},
+        {"share": temp_dir + "/assets/dir", "traverse_mounts": False},
         'routes/0/action',
     ), 'configure mount disable'
 
     assert client.get(url='/mount/')['status'] == 403
 
     assert 'success' in client.conf(
-        {"share": temp_dir + "/assets/dir$uri", "traverse_mounts": True},
+        {"share": temp_dir + "/assets/dir", "traverse_mounts": True},
         'routes/0/action',
     ), 'configure mount enable'
 
@@ -93,14 +93,14 @@ def test_static_mount_two_blocks(temp_dir, skip_alert):
             {
                 "match": {"method": "HEAD"},
                 "action": {
-                    "share": temp_dir + "/assets/dir$uri",
+                    "share": temp_dir + "/assets/dir",
                     "traverse_mounts": False,
                 },
             },
             {
                 "match": {"method": "GET"},
                 "action": {
-                    "share": temp_dir + "/assets/dir$uri",
+                    "share": temp_dir + "/assets/dir",
                     "traverse_mounts": True,
                 },
             },
@@ -116,7 +116,7 @@ def test_static_mount_chroot(temp_dir, skip_alert):
 
     assert 'success' in client.conf(
         {
-            "share": temp_dir + "/assets/dir$uri",
+            "share": temp_dir + "/assets/dir",
             "chroot": temp_dir + "/assets",
         },
         'routes/0/action',
@@ -126,7 +126,7 @@ def test_static_mount_chroot(temp_dir, skip_alert):
 
     assert 'success' in client.conf(
         {
-            "share": temp_dir + "/assets/dir$uri",
+            "share": temp_dir + "/assets/dir",
             "chroot": temp_dir + "/assets",
             "traverse_mounts": False,
         },

@@ -13,6 +13,7 @@ client_python = ApplicationPython()
 def setup_method_fixture(temp_dir):
     path = Path(f'{temp_dir}/index.html')
     path.write_text('0123456789')
+    Path(f'{temp_dir}/dir').mkdir()
 
     assert 'success' in client.conf(
         {
@@ -22,7 +23,7 @@ def setup_method_fixture(temp_dir):
             "routes": [
                 {
                     "action": {
-                        "share": str(path),
+                        "share": temp_dir,
                         "response_headers": {
                             "X-Foo": "foo",
                         },
@@ -42,9 +43,7 @@ def test_response_headers(temp_dir):
     assert resp['status'] == 200, 'status 200'
     assert resp['headers']['X-Foo'] == 'foo', 'header 200'
 
-    assert 'success' in client.conf(f'"{temp_dir}"', 'routes/0/action/share')
-
-    resp = client.get()
+    resp = client.get(url='/dir')
     assert resp['status'] == 301, 'status 301'
     assert resp['headers']['X-Foo'] == 'foo', 'header 301'
 
@@ -141,17 +140,6 @@ def test_response_fallback():
     assert client.get()['headers']['X-Foo'] == 'foo'
 
 
-def test_response_headers_var():
-    assert 'success' in client.conf(
-        {
-            "X-Foo": "$uri",
-        },
-        'routes/0/action/response_headers',
-    )
-
-    assert client.get()['headers']['X-Foo'] == '/'
-
-
 def test_response_headers_remove():
     assert 'success' in client.conf(
         {"etag": None},
@@ -168,5 +156,4 @@ def test_response_headers_invalid(skip_alert):
 
         return resp
 
-    resp = check_invalid({"X-Foo": "$u"})
-    assert 'detail' in resp and 'Unknown variable' in resp['detail']
+    check_invalid({"X-Foo": 1})

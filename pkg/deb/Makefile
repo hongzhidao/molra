@@ -75,9 +75,7 @@ CONFIGURE_ARGS_COMMON=\
 	--group=unit \
 	--tests
 
-CONFIGURE_ARGS=\
-	$(CONFIGURE_ARGS_COMMON) \
-	--njs
+CONFIGURE_ARGS=$(CONFIGURE_ARGS_COMMON)
 
 export CR=\\n
 

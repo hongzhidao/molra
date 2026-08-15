@@ -6,7 +6,6 @@
 
 #include <nxt_main.h>
 #include <nxt_conf.h>
-#include <nxt_script.h>
 #include <nxt_router.h>
 #include <nxt_http.h>
 #include <nxt_sockaddr.h>
@@ -34,7 +33,6 @@ typedef enum {
 
 typedef enum {
     NXT_CONF_VLDT_REQUIRED  = 1 << 0,
-    NXT_CONF_VLDT_TSTR      = 1 << 1,
 } nxt_conf_vldt_flags_t;
 
 
@@ -74,10 +72,6 @@ static nxt_int_t nxt_conf_vldt_type(nxt_conf_validation_t *vldt,
     nxt_str_t *name, nxt_conf_value_t *value, nxt_conf_vldt_type_t type);
 static nxt_int_t nxt_conf_vldt_error(nxt_conf_validation_t *vldt,
     const char *fmt, ...);
-static nxt_int_t nxt_conf_vldt_var(nxt_conf_validation_t *vldt, nxt_str_t *name,
-    nxt_str_t *value);
-static nxt_int_t nxt_conf_vldt_if(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
 nxt_inline nxt_int_t nxt_conf_vldt_unsupported(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 
@@ -181,14 +175,6 @@ static nxt_int_t nxt_conf_vldt_server(nxt_conf_validation_t *vldt,
     nxt_str_t *name, nxt_conf_value_t *value);
 static nxt_int_t nxt_conf_vldt_server_weight(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_access_log(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_access_log_format(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_access_log_format_field(
-    nxt_conf_validation_t *vldt, nxt_str_t *name,
-    nxt_conf_value_t *value);
-
 static nxt_int_t nxt_conf_vldt_isolation(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_clone_namespaces(nxt_conf_validation_t *vldt,
@@ -200,13 +186,6 @@ static nxt_int_t nxt_conf_vldt_clone_procmap(nxt_conf_validation_t *vldt,
 static nxt_int_t nxt_conf_vldt_clone_uidmap(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value);
 static nxt_int_t nxt_conf_vldt_clone_gidmap(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value);
-#endif
-
-#if (NXT_HAVE_NJS)
-static nxt_int_t nxt_conf_vldt_js_module(nxt_conf_validation_t *vldt,
-     nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_js_module_element(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value);
 #endif
 
@@ -229,7 +208,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_app_namespaces_members[];
 #if (NXT_HAVE_ISOLATION_ROOTFS)
 static nxt_conf_vldt_object_t  nxt_conf_vldt_app_automount_members[];
 #endif
-static nxt_conf_vldt_object_t  nxt_conf_vldt_access_log_members[];
 
 
 static nxt_conf_vldt_object_t  nxt_conf_vldt_root_members[] = {
@@ -259,8 +237,7 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_root_members[] = {
         .u.object   = nxt_conf_vldt_upstream,
     }, {
         .name       = nxt_string("access_log"),
-        .type       = NXT_CONF_VLDT_STRING | NXT_CONF_VLDT_OBJECT,
-        .validator  = nxt_conf_vldt_access_log,
+        .type       = NXT_CONF_VLDT_STRING,
     },
 
     NXT_CONF_VLDT_END
@@ -273,12 +250,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_setting_members[] = {
         .type       = NXT_CONF_VLDT_OBJECT,
         .validator  = nxt_conf_vldt_object,
         .u.members  = nxt_conf_vldt_http_members,
-#if (NXT_HAVE_NJS)
-    }, {
-        .name       = nxt_string("js_module"),
-        .type       = NXT_CONF_VLDT_STRING | NXT_CONF_VLDT_ARRAY,
-        .validator  = nxt_conf_vldt_js_module,
-#endif
     },
 
     NXT_CONF_VLDT_END
@@ -359,7 +330,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_listener_members[] = {
         .name       = nxt_string("pass"),
         .type       = NXT_CONF_VLDT_STRING,
         .validator  = nxt_conf_vldt_pass,
-        .flags      = NXT_CONF_VLDT_TSTR,
     }, {
         .name       = nxt_string("application"),
         .type       = NXT_CONF_VLDT_STRING,
@@ -482,10 +452,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_match_members[] = {
         .type       = NXT_CONF_VLDT_OBJECT | NXT_CONF_VLDT_ARRAY,
         .validator  = nxt_conf_vldt_match_patterns_sets,
         .u.string   = "cookies"
-    }, {
-        .name       = nxt_string("if"),
-        .type       = NXT_CONF_VLDT_STRING,
-        .validator  = nxt_conf_vldt_if,
     },
 
     NXT_CONF_VLDT_END
@@ -496,7 +462,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_action_common_members[] = {
     {
         .name       = nxt_string("rewrite"),
         .type       = NXT_CONF_VLDT_STRING,
-        .flags      = NXT_CONF_VLDT_TSTR,
     },
     {
         .name       = nxt_string("response_headers"),
@@ -514,7 +479,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_pass_action_members[] = {
         .name       = nxt_string("pass"),
         .type       = NXT_CONF_VLDT_STRING,
         .validator  = nxt_conf_vldt_pass,
-        .flags      = NXT_CONF_VLDT_TSTR,
     },
 
     NXT_CONF_VLDT_NEXT(nxt_conf_vldt_action_common_members)
@@ -555,7 +519,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_share_action_members[] = {
         .validator  = nxt_conf_vldt_unsupported,
         .u.string   = "chroot",
 #endif
-        .flags      = NXT_CONF_VLDT_TSTR,
     }, {
         .name       = nxt_string("follow_symlinks"),
         .type       = NXT_CONF_VLDT_BOOLEAN,
@@ -1009,34 +972,10 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_upstream_server_members[] = {
 };
 
 
-static nxt_conf_vldt_object_t  nxt_conf_vldt_access_log_members[] = {
-    {
-        .name       = nxt_string("path"),
-        .type       = NXT_CONF_VLDT_STRING,
-    }, {
-        .name       = nxt_string("format"),
-        .type       = NXT_CONF_VLDT_STRING | NXT_CONF_VLDT_OBJECT,
-        .validator  = nxt_conf_vldt_access_log_format,
-    }, {
-        .name       = nxt_string("if"),
-        .type       = NXT_CONF_VLDT_STRING,
-        .validator  = nxt_conf_vldt_if,
-    },
-
-    NXT_CONF_VLDT_END
-};
-
-
 nxt_int_t
 nxt_conf_validate(nxt_conf_validation_t *vldt)
 {
     nxt_int_t  ret;
-    u_char     error[NXT_MAX_ERROR_STR];
-
-    vldt->tstr_state = nxt_tstr_state_new(vldt->pool, 1);
-    if (nxt_slow_path(vldt->tstr_state == NULL)) {
-        return NXT_ERROR;
-    }
 
     ret = nxt_conf_vldt_type(vldt, NULL, vldt->conf, NXT_CONF_VLDT_OBJECT);
     if (ret != NXT_OK) {
@@ -1048,15 +987,8 @@ nxt_conf_validate(nxt_conf_validation_t *vldt)
         return ret;
     }
 
-    ret = nxt_tstr_state_done(vldt->tstr_state, error);
-    if (ret != NXT_OK) {
-        ret = nxt_conf_vldt_error(vldt, "%s", error);
-        return ret;
-    }
-
     return NXT_OK;
 }
-
 
 #define NXT_CONF_VLDT_ANY_TYPE_STR                                            \
     "either a null, a boolean, an integer, "                                  \
@@ -1172,52 +1104,6 @@ nxt_conf_vldt_unsupported(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
 {
     return nxt_conf_vldt_error(vldt, "Unit is built without the \"%s\" "
                                      "option support.", data);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_var(nxt_conf_validation_t *vldt, nxt_str_t *name,
-    nxt_str_t *value)
-{
-    u_char  error[NXT_MAX_ERROR_STR];
-
-    if (nxt_tstr_test(vldt->tstr_state, value, error) != NXT_OK) {
-        return nxt_conf_vldt_error(vldt, "%s in the \"%V\" value.",
-                                   error, name);
-    }
-
-    return NXT_OK;
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_if(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
-{
-    nxt_str_t  str;
-
-    static nxt_str_t  if_str = nxt_string("if");
-
-    if (nxt_conf_type(value) != NXT_CONF_STRING) {
-        return nxt_conf_vldt_error(vldt, "The \"if\" must be a string");
-    }
-
-    nxt_conf_get_string(value, &str);
-
-    if (str.length == 0) {
-        return NXT_OK;
-    }
-
-    if (str.start[0] == '!') {
-        str.start++;
-        str.length--;
-    }
-
-    if (nxt_is_tstr(&str)) {
-        return nxt_conf_vldt_var(vldt, &if_str, &str);
-    }
-
-    return NXT_OK;
 }
 
 
@@ -1553,19 +1439,9 @@ static nxt_int_t
 nxt_conf_vldt_share_element(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value)
 {
-    nxt_str_t  str;
-
-    static nxt_str_t  share = nxt_string("share");
-
     if (nxt_conf_type(value) != NXT_CONF_STRING) {
         return nxt_conf_vldt_error(vldt, "The \"share\" array must "
                                    "contain only string values.");
-    }
-
-    nxt_conf_get_string(value, &str);
-
-    if (nxt_is_tstr(&str)) {
-        return nxt_conf_vldt_var(vldt, &share, &str);
     }
 
     return NXT_OK;
@@ -2084,7 +1960,6 @@ static nxt_int_t
 nxt_conf_vldt_response_header(nxt_conf_validation_t *vldt, nxt_str_t *name,
     nxt_conf_value_t *value)
 {
-    nxt_str_t   str;
     nxt_uint_t  type;
 
     static nxt_str_t  content_length = nxt_string("Content-Length");
@@ -2106,12 +1981,6 @@ nxt_conf_vldt_response_header(nxt_conf_validation_t *vldt, nxt_str_t *name,
     }
 
     if (type == NXT_CONF_STRING) {
-        nxt_conf_get_string(value, &str);
-
-        if (nxt_is_tstr(&str)) {
-            return nxt_conf_vldt_var(vldt, name, &str);
-        }
-
         return NXT_OK;
     }
 
@@ -2238,7 +2107,7 @@ nxt_conf_vldt_object(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
 {
     uint32_t                index;
     nxt_int_t               ret;
-    nxt_str_t               name, var;
+    nxt_str_t               name;
     nxt_conf_value_t        *member;
     nxt_conf_vldt_object_t  *vals;
 
@@ -2294,21 +2163,6 @@ nxt_conf_vldt_object(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
                 vals++;
                 continue;
             }
-
-            if (vals->flags & NXT_CONF_VLDT_TSTR
-                && nxt_conf_type(member) == NXT_CONF_STRING)
-            {
-                nxt_conf_get_string(member, &var);
-
-                if (nxt_is_tstr(&var)) {
-                    ret = nxt_conf_vldt_var(vldt, &name, &var);
-                    if (ret != NXT_OK) {
-                        return ret;
-                    }
-
-                    break;
-                }
-           }
 
             ret = nxt_conf_vldt_type(vldt, &name, member, vals->type);
             if (ret != NXT_OK) {
@@ -2838,154 +2692,6 @@ nxt_conf_vldt_server_weight(nxt_conf_validation_t *vldt,
     if (num_value > 1000000) {
         return nxt_conf_vldt_error(vldt, "The \"weight\" number must "
                                    "not exceed 1,000,000");
-    }
-
-    return NXT_OK;
-}
-
-
-#if (NXT_HAVE_NJS)
-
-static nxt_int_t
-nxt_conf_vldt_js_module(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
-{
-    if (nxt_conf_type(value) == NXT_CONF_ARRAY) {
-        return nxt_conf_vldt_array_iterator(vldt, value,
-                                            &nxt_conf_vldt_js_module_element);
-    }
-
-    /* NXT_CONF_STRING */
-
-    return nxt_conf_vldt_js_module_element(vldt, value);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_js_module_element(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value)
-{
-    nxt_str_t         name;
-    nxt_conf_value_t  *module;
-
-    if (nxt_conf_type(value) != NXT_CONF_STRING) {
-        return nxt_conf_vldt_error(vldt, "The \"js_module\" array must "
-                                   "contain only string values.");
-    }
-
-    nxt_conf_get_string(value, &name);
-
-    module = nxt_script_info_get(&name);
-    if (module == NULL) {
-        return nxt_conf_vldt_error(vldt, "JS module \"%V\" is not found.",
-                                   &name);
-    }
-
-    return NXT_OK;
-}
-
-#endif
-
-
-typedef struct {
-    nxt_str_t  path;
-    nxt_str_t  format;
-} nxt_conf_vldt_access_log_conf_t;
-
-
-static nxt_conf_map_t  nxt_conf_vldt_access_log_map[] = {
-    {
-        nxt_string("path"),
-        NXT_CONF_MAP_STR,
-        offsetof(nxt_conf_vldt_access_log_conf_t, path),
-    },
-
-    {
-        nxt_string("format"),
-        NXT_CONF_MAP_STR,
-        offsetof(nxt_conf_vldt_access_log_conf_t, format),
-    },
-};
-
-
-static nxt_int_t
-nxt_conf_vldt_access_log(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
-{
-    nxt_int_t                        ret;
-    nxt_conf_vldt_access_log_conf_t  conf;
-
-    static nxt_str_t  format_str = nxt_string("format");
-
-    if (nxt_conf_type(value) == NXT_CONF_STRING) {
-        return NXT_OK;
-    }
-
-    ret = nxt_conf_vldt_object(vldt, value, nxt_conf_vldt_access_log_members);
-    if (ret != NXT_OK) {
-        return ret;
-    }
-
-    nxt_memzero(&conf, sizeof(nxt_conf_vldt_access_log_conf_t));
-
-    ret = nxt_conf_map_object(vldt->pool, value,
-                              nxt_conf_vldt_access_log_map,
-                              nxt_nitems(nxt_conf_vldt_access_log_map),
-                              &conf);
-    if (ret != NXT_OK) {
-        return ret;
-    }
-
-    if (conf.path.length == 0) {
-        return nxt_conf_vldt_error(vldt,
-                                   "The \"path\" string must not be empty.");
-    }
-
-    if (nxt_is_tstr(&conf.format)) {
-        return nxt_conf_vldt_var(vldt, &format_str, &conf.format);
-    }
-
-    return NXT_OK;
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_access_log_format(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data)
-{
-    static nxt_str_t  format = nxt_string("format");
-
-    if (nxt_conf_type(value) == NXT_CONF_OBJECT) {
-        return nxt_conf_vldt_object_iterator(vldt, value,
-                                         nxt_conf_vldt_access_log_format_field);
-    }
-
-    /* NXT_CONF_STRING */
-
-    return nxt_conf_vldt_access_log_format_field(vldt, &format, value);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_access_log_format_field(nxt_conf_validation_t *vldt,
-    nxt_str_t *name, nxt_conf_value_t *value)
-{
-    nxt_str_t  str;
-
-    if (name->length == 0) {
-        return nxt_conf_vldt_error(vldt, "In the access log format, the name "
-                                         "must not be empty.");
-    }
-
-    if (nxt_conf_type(value) != NXT_CONF_STRING) {
-        return nxt_conf_vldt_error(vldt, "In the access log format, the value "
-                                         "must be a string.");
-    }
-
-    nxt_conf_get_string(value, &str);
-
-    if (nxt_is_tstr(&str)) {
-        return nxt_conf_vldt_var(vldt, name, &str);
     }
 
     return NXT_OK;

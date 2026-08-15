@@ -168,9 +168,6 @@ struct nxt_http_request_s {
     nxt_timer_t                     timer;
     void                            *timer_data;
 
-    nxt_tstr_query_t                *tstr_query;
-    nxt_tstr_cache_t                tstr_cache;
-
     nxt_http_action_t               *action;
     void                            *req_rpc_data;
 
@@ -250,11 +247,10 @@ struct nxt_http_action_s {
         nxt_http_route_t            *route;
         nxt_upstream_t              *upstream;
         uint32_t                    upstream_number;
-        nxt_tstr_t                  *tstr;
         nxt_str_t                   *pass;
     } u;
 
-    nxt_tstr_t                      *rewrite;
+    nxt_str_t                       *rewrite;
     nxt_array_t                     *set_headers;  /* of nxt_http_field_t */
     nxt_http_action_t               *fallback;
 };
@@ -432,9 +428,6 @@ void nxt_h1p_websocket_frame_start(nxt_task_t *task, nxt_http_request_t *r,
 void nxt_h1p_complete_buffers(nxt_task_t *task, nxt_h1proto_t *h1p,
     nxt_bool_t all);
 nxt_msec_t nxt_h1p_conn_request_timer_value(nxt_conn_t *c, uintptr_t data);
-
-int nxt_http_cond_value(nxt_task_t *task, nxt_http_request_t *r,
-    nxt_tstr_cond_t *cond);
 
 extern const nxt_conn_state_t  nxt_h1p_idle_close_state;
 

@@ -41,13 +41,6 @@ def test_rewrite():
     set_rewrite("", "")
     assert client.get()['status'] == 200
 
-def test_rewrite_variable():
-    set_rewrite("/$host", "/localhost")
-    assert client.get()['status'] == 200
-
-    set_rewrite("${uri}a", "/a")
-    assert client.get()['status'] == 200
-
 def test_rewrite_arguments():
     assert 'success' in client.conf(
         [
@@ -63,12 +56,6 @@ def test_rewrite_arguments():
         'routes',
     )
     assert client.get(url='/foo?arg=val')['status'] == 200
-
-def test_rewrite_njs(require):
-    require({'modules': {'njs': 'any'}})
-
-    set_rewrite("`/${host}`", "/localhost")
-    assert client.get()['status'] == 200
 
 def test_rewrite_share(temp_dir):
     os.makedirs(f'{temp_dir}/dir')
@@ -86,7 +73,7 @@ def test_rewrite_share(temp_dir):
                 {
                     "action": {
                         "rewrite": "/dir",
-                        "share": f'{temp_dir}$uri',
+                        "share": temp_dir,
                     }
                 }
             ],
@@ -96,31 +83,6 @@ def test_rewrite_share(temp_dir):
     resp = client.get()
     assert resp['status'] == 301, 'redirect status'
     assert resp['headers']['Location'] == '/dir/', 'redirect Location'
-
-    # different action block
-
-    assert 'success' in client.conf(
-        {
-            "listeners": {"*:8080": {"pass": "routes"}},
-            "routes": [
-                {
-                    "match": {"uri": "/foo"},
-                    "action": {
-                        "rewrite": "${uri}dir",
-                        "pass": "routes",
-                    },
-                },
-                {
-                    "action": {
-                        "share": f'{temp_dir}/dir',
-                    }
-                },
-            ],
-        }
-    )
-    resp = client.get(url='/foo')
-    assert resp['status'] == 301, 'redirect status 2'
-    assert resp['headers']['Location'] == '/foodir/', 'redirect Location 2'
 
 def test_rewrite_invalid(skip_alert):
     skip_alert(r'failed to apply new conf')
@@ -137,5 +99,4 @@ def test_rewrite_invalid(skip_alert):
             'routes',
         )
 
-    check_rewrite("/$blah")
     check_rewrite(["/"])

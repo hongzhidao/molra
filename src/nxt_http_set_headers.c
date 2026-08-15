@@ -10,7 +10,7 @@
 
 typedef struct {
     nxt_str_t               name;
-    nxt_tstr_t              *value;
+    nxt_str_t               *value;
 } nxt_http_header_val_t;
 
 
@@ -57,7 +57,7 @@ nxt_http_set_headers_init(nxt_router_conf_t *rtcf, nxt_http_action_t *action,
         if (nxt_conf_type(value) == NXT_CONF_STRING) {
             nxt_conf_get_string(value, &str);
 
-            hv->value = nxt_tstr_compile(rtcf->tstr_state, &str, 0);
+            hv->value = nxt_str_dup(rtcf->mem_pool, NULL, &str);
             if (nxt_slow_path(hv->value == NULL)) {
                 return NXT_ERROR;
             }
@@ -94,11 +94,8 @@ nxt_http_resp_header_find(nxt_http_request_t *r, u_char *name, size_t length)
 nxt_int_t
 nxt_http_set_headers(nxt_http_request_t *r)
 {
-    nxt_int_t              ret;
     nxt_uint_t             i, n;
-    nxt_str_t              *value;
     nxt_http_field_t       *f;
-    nxt_router_conf_t      *rtcf;
     nxt_http_action_t      *action;
     nxt_http_header_val_t  *hv, *header;
 
@@ -112,46 +109,15 @@ nxt_http_set_headers(nxt_http_request_t *r)
         return NXT_OK;
     }
 
-    rtcf = r->conf->socket_conf->router_conf;
-
     header = action->set_headers->elts;
     n = action->set_headers->nelts;
-
-    value = nxt_mp_zalloc(r->mem_pool, sizeof(nxt_str_t) * n);
-    if (nxt_slow_path(value == NULL)) {
-        return NXT_ERROR;
-    }
-
-    for (i = 0; i < n; i++) {
-        hv = &header[i];
-
-        if (hv->value == NULL) {
-            continue;
-        }
-
-        if (nxt_tstr_is_const(hv->value)) {
-            nxt_tstr_str(hv->value, &value[i]);
-
-        } else {
-            ret = nxt_tstr_query_init(&r->tstr_query, rtcf->tstr_state,
-                                      &r->tstr_cache, r, r->mem_pool);
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return NXT_ERROR;
-            }
-
-            ret = nxt_tstr_query(&r->task, r->tstr_query, hv->value, &value[i]);
-            if (nxt_slow_path(ret != NXT_OK)) {
-                return NXT_ERROR;
-            }
-        }
-    }
 
     for (i = 0; i < n; i++) {
         hv = &header[i];
 
         f = nxt_http_resp_header_find(r, hv->name.start, hv->name.length);
 
-        if (value[i].start != NULL) {
+        if (hv->value != NULL) {
 
             if (f == NULL) {
                 f = nxt_list_zero_add(r->resp.fields);
@@ -163,8 +129,8 @@ nxt_http_set_headers(nxt_http_request_t *r)
                 f->name_length = hv->name.length;
             }
 
-            f->value = value[i].start;
-            f->value_length = value[i].length;
+            f->value = hv->value->start;
+            f->value_length = hv->value->length;
 
         } else if (f != NULL) {
             f->skip = 1;

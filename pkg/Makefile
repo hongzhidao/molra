@@ -27,9 +27,6 @@ deb:
 docker:
 	@cd docker && VERSION=$(VERSION) RELEASE=$(RELEASE) make all
 
-njs:
-	@cd contrib && make .njs
-
 clean:
 	@cd rpm && make clean
 	@cd deb && make clean
