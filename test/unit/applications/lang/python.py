@@ -49,7 +49,6 @@ class ApplicationPython(ApplicationProto):
             'limits',
             'path',
             'targets',
-            'threads',
         ):
             if attr in kwargs:
                 app[attr] = kwargs.pop(attr)

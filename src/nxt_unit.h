@@ -152,8 +152,6 @@ struct nxt_unit_callbacks_s {
     /* Receive data on port id. Optional. */
     ssize_t  (*port_recv)(nxt_unit_ctx_t *, nxt_unit_port_t *port,
                  void *buf, size_t buf_size, void *oob, size_t *oob_size);
-
-    int      (*ready_handler)(nxt_unit_ctx_t *);
 };
 
 
@@ -226,12 +224,6 @@ int nxt_unit_process_port_msg(nxt_unit_ctx_t *ctx, nxt_unit_port_t *port);
 
 /* Destroy application library object. */
 void nxt_unit_done(nxt_unit_ctx_t *);
-
-/*
- * Allocate and initialize new execution context with new listen port to
- * process requests in other thread.
- */
-nxt_unit_ctx_t *nxt_unit_ctx_alloc(nxt_unit_ctx_t *, void *);
 
 /* Initialize port_id, calculate hash. */
 void nxt_unit_port_id_init(nxt_unit_port_id_t *port_id, pid_t pid, uint16_t id);

@@ -15,13 +15,6 @@
 #include NXT_PYTHON_MOUNTS_H
 
 
-typedef struct {
-    pthread_t       thread;
-    nxt_unit_ctx_t  *ctx;
-    void            *ctx_data;
-} nxt_py_thread_info_t;
-
-
 #if PY_MAJOR_VERSION == 3
 static nxt_int_t nxt_python3_init_config(nxt_int_t pep405);
 #endif
@@ -31,11 +24,6 @@ static nxt_int_t nxt_python_start(nxt_task_t *task,
 static nxt_int_t nxt_python_set_target(nxt_task_t *task,
     nxt_python_target_t *target, nxt_conf_value_t *conf);
 static nxt_int_t nxt_python_set_path(nxt_task_t *task, nxt_conf_value_t *value);
-static int nxt_python_init_threads(nxt_python_app_conf_t *c);
-static int nxt_python_ready_handler(nxt_unit_ctx_t *ctx);
-static void *nxt_python_thread_func(void *main_ctx);
-static void nxt_python_join_threads(nxt_unit_ctx_t *ctx,
-    nxt_python_app_conf_t *c);
 static void nxt_python_atexit(void);
 
 static uint32_t  compat[] = {
@@ -63,8 +51,6 @@ static wchar_t            *nxt_py_home;
 static char               *nxt_py_home;
 #endif
 
-static pthread_attr_t        *nxt_py_thread_attr;
-static nxt_py_thread_info_t  *nxt_py_threads;
 static nxt_python_proto_t    nxt_py_proto;
 
 
@@ -226,12 +212,6 @@ nxt_python_start(nxt_task_t *task, nxt_process_data_t *data)
 
     Py_InitializeEx(0);
 
-#if PY_VERSION_HEX < NXT_PYTHON_VER(3, 7)
-    if (c->threads > 1) {
-        PyEval_InitThreads();
-    }
-#endif
-
     module = NULL;
     obj = NULL;
 
@@ -311,7 +291,6 @@ nxt_python_start(nxt_task_t *task, nxt_process_data_t *data)
     nxt_unit_default_init(task, &python_init, data->app);
 
     python_init.data = c;
-    python_init.callbacks.ready_handler = nxt_python_ready_handler;
 
     rc = nxt_python_wsgi_init(&python_init, &nxt_py_proto);
 
@@ -319,12 +298,7 @@ nxt_python_start(nxt_task_t *task, nxt_process_data_t *data)
         goto fail;
     }
 
-    rc = nxt_py_proto.ctx_data_alloc(&python_init.ctx_data, 1);
-    if (nxt_slow_path(rc != NXT_UNIT_OK)) {
-        goto fail;
-    }
-
-    rc = nxt_python_init_threads(c);
+    rc = nxt_py_proto.ctx_data_alloc(&python_init.ctx_data);
     if (nxt_slow_path(rc == NXT_UNIT_ERROR)) {
         goto fail;
     }
@@ -335,8 +309,6 @@ nxt_python_start(nxt_task_t *task, nxt_process_data_t *data)
     }
 
     rc = nxt_py_proto.run(unit_ctx);
-
-    nxt_python_join_threads(unit_ctx, c);
 
     nxt_unit_done(unit_ctx);
 
@@ -349,8 +321,6 @@ nxt_python_start(nxt_task_t *task, nxt_process_data_t *data)
     return NXT_OK;
 
 fail:
-
-    nxt_python_join_threads(NULL, c);
 
     if (python_init.ctx_data != NULL) {
         nxt_py_proto.ctx_data_free(python_init.ctx_data);
@@ -531,176 +501,6 @@ nxt_python_set_path(nxt_task_t *task, nxt_conf_value_t *value)
     }
 
     return NXT_OK;
-}
-
-
-static int
-nxt_python_init_threads(nxt_python_app_conf_t *c)
-{
-    int                    res;
-    uint32_t               i;
-    nxt_py_thread_info_t   *ti;
-    static pthread_attr_t  attr;
-
-    if (c->threads <= 1) {
-        return NXT_UNIT_OK;
-    }
-
-    if (c->thread_stack_size > 0) {
-        res = pthread_attr_init(&attr);
-        if (nxt_slow_path(res != 0)) {
-            nxt_unit_alert(NULL, "thread attr init failed: %s (%d)",
-                           strerror(res), res);
-
-            return NXT_UNIT_ERROR;
-        }
-
-        res = pthread_attr_setstacksize(&attr, c->thread_stack_size);
-        if (nxt_slow_path(res != 0)) {
-            nxt_unit_alert(NULL, "thread attr set stack size failed: %s (%d)",
-                           strerror(res), res);
-
-            return NXT_UNIT_ERROR;
-        }
-
-        nxt_py_thread_attr = &attr;
-    }
-
-    nxt_py_threads = nxt_unit_malloc(NULL, sizeof(nxt_py_thread_info_t)
-                                           * (c->threads - 1));
-    if (nxt_slow_path(nxt_py_threads == NULL)) {
-        nxt_unit_alert(NULL, "Failed to allocate thread info array");
-
-        return NXT_UNIT_ERROR;
-    }
-
-    memset(nxt_py_threads, 0, sizeof(nxt_py_thread_info_t) * (c->threads - 1));
-
-    for (i = 0; i < c->threads - 1; i++) {
-        ti = &nxt_py_threads[i];
-
-        res = nxt_py_proto.ctx_data_alloc(&ti->ctx_data, 0);
-        if (nxt_slow_path(res != NXT_UNIT_OK)) {
-            return NXT_UNIT_ERROR;
-        }
-    }
-
-    return NXT_UNIT_OK;
-}
-
-
-static int
-nxt_python_ready_handler(nxt_unit_ctx_t *ctx)
-{
-    int                    res;
-    uint32_t               i;
-    nxt_py_thread_info_t   *ti;
-    nxt_python_app_conf_t  *c;
-
-    c = ctx->unit->data;
-
-    if (c->threads <= 1) {
-        return NXT_UNIT_OK;
-    }
-
-    for (i = 0; i < c->threads - 1; i++) {
-        ti = &nxt_py_threads[i];
-
-        ti->ctx = ctx;
-
-        res = pthread_create(&ti->thread, nxt_py_thread_attr,
-                             nxt_python_thread_func, ti);
-
-        if (nxt_fast_path(res == 0)) {
-            nxt_unit_debug(ctx, "thread #%d created", (int) (i + 1));
-
-        } else {
-            nxt_unit_alert(ctx, "thread #%d create failed: %s (%d)",
-                           (int) (i + 1), strerror(res), res);
-        }
-    }
-
-    return NXT_UNIT_OK;
-}
-
-
-static void *
-nxt_python_thread_func(void *data)
-{
-    nxt_unit_ctx_t        *ctx;
-    PyGILState_STATE      gstate;
-    nxt_py_thread_info_t  *ti;
-
-    ti = data;
-
-    nxt_unit_debug(ti->ctx, "worker thread #%d start",
-                   (int) (ti - nxt_py_threads + 1));
-
-    gstate = PyGILState_Ensure();
-
-    ctx = nxt_unit_ctx_alloc(ti->ctx, ti->ctx_data);
-    if (nxt_slow_path(ctx == NULL)) {
-        goto fail;
-    }
-
-    (void) nxt_py_proto.run(ctx);
-
-    nxt_unit_done(ctx);
-
-fail:
-
-    PyGILState_Release(gstate);
-
-    nxt_unit_debug(NULL, "worker thread #%d end",
-                   (int) (ti - nxt_py_threads + 1));
-
-    return NULL;
-}
-
-
-static void
-nxt_python_join_threads(nxt_unit_ctx_t *ctx, nxt_python_app_conf_t *c)
-{
-    int                   res;
-    uint32_t              i;
-    PyThreadState         *thread_state;
-    nxt_py_thread_info_t  *ti;
-
-    if (nxt_py_threads == NULL) {
-        return;
-    }
-
-    thread_state = PyEval_SaveThread();
-
-    for (i = 0; i < c->threads - 1; i++) {
-        ti = &nxt_py_threads[i];
-
-        if ((uintptr_t) ti->thread == 0) {
-            continue;
-        }
-
-        res = pthread_join(ti->thread, NULL);
-
-        if (nxt_fast_path(res == 0)) {
-            nxt_unit_debug(ctx, "thread #%d joined", (int) (i + 1));
-
-        } else {
-            nxt_unit_alert(ctx, "thread #%d join failed: %s (%d)",
-                           (int) (i + 1), strerror(res), res);
-        }
-    }
-
-    PyEval_RestoreThread(thread_state);
-
-    for (i = 0; i < c->threads - 1; i++) {
-        ti = &nxt_py_threads[i];
-
-        if (ti->ctx_data != NULL) {
-            nxt_py_proto.ctx_data_free(ti->ctx_data);
-        }
-    }
-
-    nxt_unit_free(NULL, nxt_py_threads);
 }
 
 

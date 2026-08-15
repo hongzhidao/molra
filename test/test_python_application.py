@@ -893,39 +893,3 @@ def test_python_application_path_invalid():
 
     check_path('{}')
     check_path('["/blah", []]')
-
-def test_python_application_threads():
-    client.load('threads', threads=4)
-
-    socks = []
-
-    for _ in range(4):
-        sock = client.get(
-            headers={
-                'Host': 'localhost',
-                'X-Delay': '2',
-                'Connection': 'close',
-            },
-            no_recv=True,
-        )
-
-        socks.append(sock)
-
-    threads = set()
-
-    for sock in socks:
-        resp = client.recvall(sock).decode('utf-8')
-
-        client.log_in(resp)
-
-        resp = client._resp_to_dict(resp)
-
-        assert resp['status'] == 200, 'status'
-
-        threads.add(resp['headers']['X-Thread'])
-
-        assert resp['headers']['Wsgi-Multithread'] == 'True', 'multithread'
-
-        sock.close()
-
-    assert len(socks) == len(threads), 'threads differs'

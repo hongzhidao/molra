@@ -48,8 +48,6 @@ typedef struct {
     nxt_conf_value_t           *path;
     nxt_str_t                  module;
     char                       *callable;
-    uint32_t                   threads;
-    uint32_t                   thread_stack_size;
     nxt_conf_value_t           *targets;
 } nxt_python_app_conf_t;
 
