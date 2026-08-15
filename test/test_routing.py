@@ -392,20 +392,6 @@ def test_routes_route_pass():
                     "module": "wsgi",
                 }
             },
-            "upstreams": {
-                "one": {
-                    "servers": {
-                        "127.0.0.1:8081": {},
-                        "127.0.0.1:8082": {},
-                    },
-                },
-                "two": {
-                    "servers": {
-                        "127.0.0.1:8081": {},
-                        "127.0.0.1:8082": {},
-                    },
-                },
-            },
         }
     )
 
@@ -415,10 +401,6 @@ def test_routes_route_pass():
     assert 'success' in client.conf(
         [{"action": {"pass": "applications/app"}}], 'routes'
     )
-    assert 'success' in client.conf(
-        [{"action": {"pass": "upstreams/one"}}], 'routes'
-    )
-
 def test_routes_route_pass_absent():
     assert 'error' in client.conf(
         [{"match": {"method": "GET"}, "action": {}}], 'routes'
@@ -435,20 +417,6 @@ def test_routes_route_pass_invalid():
                     "module": "wsgi",
                 }
             },
-            "upstreams": {
-                "one": {
-                    "servers": {
-                        "127.0.0.1:8081": {},
-                        "127.0.0.1:8082": {},
-                    },
-                },
-                "two": {
-                    "servers": {
-                        "127.0.0.1:8081": {},
-                        "127.0.0.1:8082": {},
-                    },
-                },
-            },
         }
     )
 
@@ -464,30 +432,14 @@ def test_routes_route_pass_invalid():
     assert 'error' in client.conf(
         [{"action": {"pass": "upstreams/blah"}}], 'routes'
     ), 'route pass upstreams invalid'
-
-def test_routes_action_unique():
-    assert 'success' in client.conf(
-        {
-            "listeners": {
-                "*:8080": {"pass": "routes"},
-                "*:8081": {"pass": "applications/app"},
-            },
-            "routes": [{"action": {"proxy": "http://127.0.0.1:8081"}}],
-            "applications": {
-                "app": {
-                    "type": "python",
-                    "processes": {"spare": 0},
-                    "path": "/app",
-                    "module": "wsgi",
-                }
-            },
-        }
-    )
-
     assert 'error' in client.conf(
-        {"proxy": "http://127.0.0.1:8081", "pass": "applications/app",},
-        'routes/0/action',
-    ), 'proxy pass'
+        {"one": {"servers": {"127.0.0.1:8081": {}}}}, 'upstreams'
+    ), 'upstreams unsupported'
+
+def test_routes_action_proxy_invalid():
+    assert 'error' in client.conf(
+        {"proxy": "http://127.0.0.1:8081", "return": 200}, 'routes/0/action'
+    ), 'proxy unsupported'
 
 
 def test_routes_action_share_invalid():
@@ -1892,25 +1844,3 @@ def test_routes_match_destination():
     ), 'add destination rule'
     assert client.get()['status'] == 404, 'dest neg 16'
     assert client.get(port=8081)['status'] == 404, 'dest neg 17'
-
-def test_routes_match_destination_proxy():
-    assert 'success' in client.conf(
-        {
-            "listeners": {
-                "*:8080": {"pass": "routes/first"},
-                "*:8081": {"pass": "routes/second"},
-            },
-            "routes": {
-                "first": [{"action": {"proxy": "http://127.0.0.1:8081"}}],
-                "second": [
-                    {
-                        "match": {"destination": ["127.0.0.1:8081"]},
-                        "action": {"return": 200},
-                    }
-                ],
-            },
-            "applications": {},
-        }
-    ), 'proxy configure'
-
-    assert client.get()['status'] == 200, 'proxy'
