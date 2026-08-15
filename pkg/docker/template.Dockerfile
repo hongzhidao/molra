@@ -10,7 +10,7 @@ LABEL org.opencontainers.image.version="@@VERSION@@"
 
 RUN set -ex \
     && apt-get update \
-    && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates mercurial build-essential libpcre2-dev \
+    && apt-get install --no-install-recommends --no-install-suggests -y ca-certificates mercurial build-essential \
     && mkdir -p /usr/lib/unit/modules /usr/lib/unit/debug-modules \
     && hg clone -u @@VERSION@@-@@PATCHLEVEL@@ https://hg.nginx.org/unit \
     && cd unit \

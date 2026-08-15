@@ -8,7 +8,6 @@
 #include <nxt_http.h>
 #include <nxt_sockaddr.h>
 #include <nxt_http_route_addr.h>
-#include <nxt_regex.h>
 
 
 typedef enum {
@@ -62,20 +61,12 @@ typedef struct {
 
 
 typedef struct {
-    union {
-        nxt_array_t                *pattern_slices;
-#if (NXT_HAVE_REGEX)
-        nxt_regex_t                *regex;
-#endif
-    } u;
+    nxt_array_t                    *pattern_slices;
     uint32_t                       min_length;
 
     uint8_t                        case_sensitive;  /* 1 bit */
     uint8_t                        negative;        /* 1 bit */
     uint8_t                        any;             /* 1 bit */
-#if (NXT_HAVE_REGEX)
-    uint8_t                        regex;           /* 1 bit */
-#endif
 } nxt_http_route_pattern_t;
 
 
@@ -229,8 +220,8 @@ static nxt_int_t nxt_http_route_test_cookie(nxt_http_request_t *r,
     nxt_http_route_rule_t *rule, nxt_array_t *array);
 static nxt_int_t nxt_http_route_test_rule(nxt_http_request_t *r,
     nxt_http_route_rule_t *rule, u_char *start, size_t length);
-static nxt_int_t nxt_http_route_pattern(nxt_http_request_t *r,
-    nxt_http_route_pattern_t *pattern, u_char *start, size_t length);
+static nxt_int_t nxt_http_route_pattern(nxt_http_route_pattern_t *pattern,
+    u_char *start, size_t length);
 static nxt_int_t nxt_http_route_memcmp(u_char *start, u_char *test,
     size_t length, nxt_bool_t case_sensitive);
 
@@ -918,10 +909,6 @@ nxt_http_route_pattern_create(nxt_task_t *task, nxt_mp_t *mp,
     nxt_str_t                       test, tmp;
     nxt_int_t                       ret;
     nxt_array_t                     *slices;
-#if (NXT_HAVE_REGEX)
-    nxt_regex_t                     *re;
-    nxt_regex_err_t                 err;
-#endif
     nxt_http_route_pattern_type_t   type;
     nxt_http_route_pattern_slice_t  *slice;
 
@@ -929,13 +916,10 @@ nxt_http_route_pattern_create(nxt_task_t *task, nxt_mp_t *mp,
 
     nxt_conf_get_string(cv, &test);
 
-    pattern->u.pattern_slices = NULL;
+    pattern->pattern_slices = NULL;
     pattern->negative = 0;
     pattern->any = 1;
     pattern->min_length = 0;
-#if (NXT_HAVE_REGEX)
-    pattern->regex = 0;
-#endif
 
     if (test.length != 0 && test.start[0] == '!') {
         test.start++;
@@ -946,31 +930,8 @@ nxt_http_route_pattern_create(nxt_task_t *task, nxt_mp_t *mp,
     }
 
     if (test.length > 0 && test.start[0] == '~') {
-#if (NXT_HAVE_REGEX)
-        test.start++;
-        test.length--;
-
-        re = nxt_regex_compile(mp, &test, &err);
-        if (nxt_slow_path(re == NULL)) {
-            if (err.offset < test.length) {
-                nxt_alert(task, "nxt_regex_compile(%V) failed: %s at offset %d",
-                          &test, err.msg, (int) err.offset);
-                return NXT_ERROR;
-            }
-
-            nxt_alert(task, "nxt_regex_compile(%V) failed %s", &test, err.msg);
-
-            return NXT_ERROR;
-        }
-
-        pattern->u.regex = re;
-        pattern->regex = 1;
-
-        return NXT_OK;
-
-#else
+        nxt_alert(task, "regular expression route patterns are not supported");
         return NXT_ERROR;
-#endif
     }
 
     slices = nxt_array_create(mp, 1, sizeof(nxt_http_route_pattern_slice_t));
@@ -978,7 +939,7 @@ nxt_http_route_pattern_create(nxt_task_t *task, nxt_mp_t *mp,
         return NXT_ERROR;
     }
 
-    pattern->u.pattern_slices = slices;
+    pattern->pattern_slices = slices;
 
     if (test.length == 0) {
         slice = nxt_array_add(slices);
@@ -1850,7 +1811,7 @@ nxt_http_route_scheme(nxt_http_request_t *r, nxt_http_route_rule_t *rule)
     nxt_bool_t                      https;
     nxt_http_route_pattern_slice_t  *pattern_slice;
 
-    pattern_slice = rule->pattern[0].u.pattern_slices->elts;
+    pattern_slice = rule->pattern[0].pattern_slices->elts;
     https = (pattern_slice->length == nxt_length("https"));
 
     return (r->https == https);
@@ -1934,7 +1895,7 @@ nxt_http_route_test_rule(nxt_http_request_t *r, nxt_http_route_rule_t *rule,
     end = pattern + rule->items;
 
     while (pattern < end) {
-        ret = nxt_http_route_pattern(r, pattern, start, length);
+        ret = nxt_http_route_pattern(pattern, start, length);
         if (nxt_slow_path(ret == NXT_ERROR)) {
             return NXT_ERROR;
         }
@@ -1954,27 +1915,14 @@ nxt_http_route_test_rule(nxt_http_request_t *r, nxt_http_route_rule_t *rule,
 
 
 static nxt_int_t
-nxt_http_route_pattern(nxt_http_request_t *r, nxt_http_route_pattern_t *pattern,
-    u_char *start, size_t length)
+nxt_http_route_pattern(nxt_http_route_pattern_t *pattern, u_char *start,
+    size_t length)
 {
     u_char                          *p, *end, *test;
     size_t                          test_length;
     uint32_t                        i;
     nxt_array_t                     *pattern_slices;
     nxt_http_route_pattern_slice_t  *pattern_slice;
-
-#if (NXT_HAVE_REGEX)
-    if (pattern->regex) {
-        if (r->regex_match == NULL) {
-            r->regex_match = nxt_regex_match_create(r->mem_pool, 0);
-            if (nxt_slow_path(r->regex_match == NULL)) {
-                return NXT_ERROR;
-            }
-        }
-
-        return nxt_regex_match(pattern->u.regex, start, length, r->regex_match);
-    }
-#endif
 
     if (length < pattern->min_length) {
         return 0;
@@ -1984,9 +1932,9 @@ nxt_http_route_pattern(nxt_http_request_t *r, nxt_http_route_pattern_t *pattern,
         return 1;
     }
 
-    nxt_assert(pattern->u.pattern_slices != NULL);
+    nxt_assert(pattern->pattern_slices != NULL);
 
-    pattern_slices = pattern->u.pattern_slices;
+    pattern_slices = pattern->pattern_slices;
     pattern_slice = pattern_slices->elts;
     end = start + length;
 

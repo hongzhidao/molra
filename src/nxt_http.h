@@ -7,7 +7,6 @@
 #ifndef _NXT_HTTP_H_INCLUDED_
 #define _NXT_HTTP_H_INCLUDED_
 
-#include <nxt_regex.h>
 
 
 typedef enum {
@@ -145,10 +144,6 @@ struct nxt_http_request_s {
 
     nxt_http_action_t               *action;
     void                            *req_rpc_data;
-
-#if (NXT_HAVE_REGEX)
-    nxt_regex_match_t               *regex_match;
-#endif
 
     nxt_buf_t                       *last;
 

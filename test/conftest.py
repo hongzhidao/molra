@@ -165,7 +165,7 @@ Unexpected prerequisite version "{version}" for module "{module}".
 def pytest_sessionstart():
     unit = unit_run()
 
-    discover_available(unit)
+    discover_available()
 
     _clear_conf()
 

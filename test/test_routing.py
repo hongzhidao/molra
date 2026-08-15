@@ -231,55 +231,9 @@ def test_routes_match_many_wildcard_substrings_case_sensitive():
     assert client.get(url='/aBCaBbc')['status'] == 200
     assert client.get(url='/ABc')['status'] == 404
 
-def test_routes_empty_regex(require):
-    require({'modules': {'regex': True}})
-
-    route_match({"uri": "~"})
-    assert client.get(url='/')['status'] == 200, 'empty regexp'
-    assert client.get(url='/anything')['status'] == 200, '/anything'
-
-    route_match({"uri": "!~"})
-    assert client.get(url='/')['status'] == 404, 'empty regexp 2'
-    assert client.get(url='/nothing')['status'] == 404, '/nothing'
-
-def test_routes_bad_regex(require):
-    require({'modules': {'regex': True}})
-
-    assert 'error' in route(
-        {"match": {"uri": "~/bl[ah"}, "action": {"return": 200}}
-    ), 'bad regex'
-
-    status = route(
-        {"match": {"uri": "~(?R)?z"}, "action": {"return": 200}}
-    )
-    if 'error' not in status:
-        assert client.get(url='/nothing_z')['status'] == 500, '/nothing_z'
-
-    status = route(
-        {"match": {"uri": "~((?1)?z)"}, "action": {"return": 200}}
-    )
-    if 'error' not in status:
-        assert client.get(url='/nothing_z')['status'] == 500, '/nothing_z'
-
-def test_routes_match_regex_case_sensitive(require):
-    require({'modules': {'regex': True}})
-
-    route_match({"uri": "~/bl[ah]"})
-
-    assert client.get(url='/rlah')['status'] == 404, '/rlah'
-    assert client.get(url='/blah')['status'] == 200, '/blah'
-    assert client.get(url='/blh')['status'] == 200, '/blh'
-    assert client.get(url='/BLAH')['status'] == 404, '/BLAH'
-
-def test_routes_match_regex_negative_case_sensitive(require):
-    require({'modules': {'regex': True}})
-
-    route_match({"uri": "!~/bl[ah]"})
-
-    assert client.get(url='/rlah')['status'] == 200, '/rlah'
-    assert client.get(url='/blah')['status'] == 404, '/blah'
-    assert client.get(url='/blh')['status'] == 404, '/blh'
-    assert client.get(url='/BLAH')['status'] == 200, '/BLAH'
+def test_routes_match_regex_invalid():
+    route_match_invalid({"uri": "~/bl[ah]"})
+    route_match_invalid({"uri": "!~/bl[ah]"})
 
 def test_routes_pass_encode():
     def check_pass(path, name):

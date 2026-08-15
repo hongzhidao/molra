@@ -32,8 +32,6 @@ Source0: unit-%{version}.tar.gz
 
 BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-BuildRequires: pcre2-devel
-
 Requires: unit == %%UNIT_VERSION%%-%%UNIT_RELEASE%%%{?dist}.ngx
 
 %description
