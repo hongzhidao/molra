@@ -217,7 +217,6 @@ typedef enum {
 
 typedef struct nxt_http_route_s            nxt_http_route_t;
 typedef struct nxt_http_route_rule_s       nxt_http_route_rule_t;
-typedef struct nxt_http_route_addr_rule_s  nxt_http_route_addr_rule_t;
 
 
 typedef struct {
@@ -263,20 +262,6 @@ typedef struct {
     void (*ws_frame_start)(nxt_task_t *task, nxt_http_request_t *r,
         nxt_buf_t *ws_frame);
 } nxt_http_proto_table_t;
-
-
-typedef struct {
-    nxt_str_t                   *header;
-    uint32_t                    header_hash;
-} nxt_http_forward_header_t;
-
-
-struct nxt_http_forward_s {
-    nxt_http_forward_header_t   client_ip;
-    nxt_http_forward_header_t   protocol;
-    nxt_http_route_addr_rule_t  *source;
-    uint8_t                     recursive;    /* 1 bit */
-};
 
 
 #define NXT_HTTP_DATE_LEN  nxt_length("Wed, 31 Dec 1986 16:40:00 GMT")
@@ -344,10 +329,6 @@ nxt_int_t nxt_http_pass_segments(nxt_mp_t *mp, nxt_str_t *pass,
     nxt_str_t *segments, nxt_uint_t n);
 nxt_http_action_t *nxt_http_pass_application(nxt_task_t *task,
     nxt_router_conf_t *rtcf, nxt_str_t *name);
-nxt_http_route_addr_rule_t *nxt_http_route_addr_rule_create(
-    nxt_task_t *task, nxt_mp_t *mp, nxt_conf_value_t *cv);
-nxt_int_t nxt_http_route_addr_rule(nxt_http_request_t *r,
-    nxt_http_route_addr_rule_t *addr_rule, nxt_sockaddr_t *sockaddr);
 nxt_int_t nxt_http_action_init(nxt_router_temp_conf_t *tmcf,
     nxt_conf_value_t *cv, nxt_http_action_t *action);
 void nxt_http_request_action(nxt_task_t *task, nxt_http_request_t *r,

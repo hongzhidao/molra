@@ -228,6 +228,34 @@ def test_listeners_no_app():
         {"*:8080": {"pass": "applications/app"}}, 'listeners'
     ), 'listeners no app'
 
+def test_listeners_forward_invalid():
+    def check_error(option):
+        assert 'error' in client.conf(
+            {
+                "listeners": {
+                    "*:8080": {"pass": "routes", **option},
+                },
+                "routes": [{"action": {"return": 200}}],
+            }
+        )
+
+    check_error(
+        {
+            "forwarded": {
+                "client_ip": "X-Forwarded-For",
+                "source": "127.0.0.1",
+            }
+        }
+    )
+    check_error(
+        {
+            "client_ip": {
+                "header": "X-Forwarded-For",
+                "source": "127.0.0.1",
+            }
+        }
+    )
+
 def test_listeners_addr():
     assert 'success' in try_addr("*:8080"), 'wildcard'
     assert 'success' in try_addr("127.0.0.1:8081"), 'explicit'
