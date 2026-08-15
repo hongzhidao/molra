@@ -11,9 +11,7 @@ PACKAGES=	unit 							\
 		unit-go unit-go1.7 unit-go1.8 unit-go1.9 unit-go1.10	\
 		unit-go1.12 unit-go1.13					\
 		unit-perl						\
-		unit-ruby						\
-		unit-jsc-common unit-jsc8 unit-jsc10 unit-jsc11		\
-		unit-jsc13 unit-jsc14 unit-jsc15 unit-jsc16 unit-jsc17
+		unit-ruby
 
 CURDATE:=$(shell date +"%Y-%m-%d")
 CURTIME:=$(shell date +"%H:%M:%S %z")

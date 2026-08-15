@@ -11,9 +11,7 @@
                 unit-python3.8 unit-python3.9 unit-python3.10
                 unit-go
                 unit-perl
-                unit-ruby
-                unit-jsc-common unit-jsc8 unit-jsc10 unit-jsc11 unit-jsc13
-                unit-jsc14 unit-jsc15 unit-jsc16 unit-jsc17 unit-jsc18"
+                unit-ruby"
          ver="1.28.0" rev="1"
          date="" time=""
          packager="Zhidao HONG &lt;hongzhidao@gmail.com&gt;">
@@ -30,6 +28,12 @@ NGINX Unit updated to 1.28.0.
 <changes apply="unit" ver="1.28.0" rev="1"
          date="" time=""
          packager="Zhidao HONG &lt;hongzhidao@gmail.com&gt;">
+
+<change type="change">
+<para>
+Java application support has been removed.
+</para>
+</change>
 
 </changes>
 
