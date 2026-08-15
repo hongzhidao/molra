@@ -48,7 +48,6 @@ class ApplicationPython(ApplicationProto):
             'home',
             'limits',
             'path',
-            'protocol',
             'targets',
             'threads',
         ):

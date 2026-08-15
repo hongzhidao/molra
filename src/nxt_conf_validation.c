@@ -80,8 +80,6 @@ static nxt_int_t nxt_conf_vldt_python_path(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_python_path_element(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_python_protocol(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_threads(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_thread_stack_size(nxt_conf_validation_t *vldt,
@@ -357,10 +355,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_python_common_members[] = {
         .name       = nxt_string("path"),
         .type       = NXT_CONF_VLDT_STRING | NXT_CONF_VLDT_ARRAY,
         .validator  = nxt_conf_vldt_python_path,
-    }, {
-        .name       = nxt_string("protocol"),
-        .type       = NXT_CONF_VLDT_STRING,
-        .validator  = nxt_conf_vldt_python_protocol,
     }, {
         .name       = nxt_string("threads"),
         .type       = NXT_CONF_VLDT_INTEGER,
@@ -1023,27 +1017,6 @@ nxt_conf_vldt_python_path_element(nxt_conf_validation_t *vldt,
 
     return NXT_OK;
 }
-
-
-static nxt_int_t
-nxt_conf_vldt_python_protocol(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data)
-{
-    nxt_str_t  proto;
-
-    static const nxt_str_t  wsgi = nxt_string("wsgi");
-    static const nxt_str_t  asgi = nxt_string("asgi");
-
-    nxt_conf_get_string(value, &proto);
-
-    if (nxt_strstr_eq(&proto, &wsgi) || nxt_strstr_eq(&proto, &asgi)) {
-        return NXT_OK;
-    }
-
-    return nxt_conf_vldt_error(vldt, "The \"protocol\" can either be "
-                                     "\"wsgi\" or \"asgi\".");
-}
-
 
 static nxt_int_t
 nxt_conf_vldt_threads(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,

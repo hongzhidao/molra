@@ -33,14 +33,8 @@
 #define PyUnicode_GET_LENGTH        PyUnicode_GET_SIZE
 #endif
 
-#if PY_VERSION_HEX >= NXT_PYTHON_VER(3, 5)
-#define NXT_HAVE_ASGI  1
-#endif
-
-
 typedef struct {
     PyObject    *application;
-    nxt_bool_t  asgi_legacy;
 } nxt_python_target_t;
 
 
@@ -62,7 +56,6 @@ typedef struct {
 typedef struct {
     int   (*ctx_data_alloc)(void **pdata, int main);
     void  (*ctx_data_free)(void *data);
-    int   (*startup)(void *data);
     int   (*run)(nxt_unit_ctx_t *ctx);
     void  (*done)(void);
 } nxt_python_proto_t;
@@ -74,9 +67,6 @@ void nxt_python_done_strings(nxt_python_string_t *pstr);
 void nxt_python_print_exception(void);
 
 int nxt_python_wsgi_init(nxt_unit_init_t *init, nxt_python_proto_t *proto);
-
-int nxt_python_asgi_check(PyObject *obj);
-int nxt_python_asgi_init(nxt_unit_init_t *init, nxt_python_proto_t *proto);
 
 
 #endif  /* _NXT_PYTHON_H_INCLUDED_ */

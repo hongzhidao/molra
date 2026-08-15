@@ -148,7 +148,7 @@ nxt_python_start(nxt_task_t *task, nxt_process_data_t *data)
     size_t                 len, size;
     uint32_t               next;
     PyObject               *obj, *module;
-    nxt_str_t              proto, probe_proto, name;
+    nxt_str_t              name;
     nxt_int_t              ret, n, i;
     nxt_unit_ctx_t         *unit_ctx;
     nxt_unit_init_t        python_init;
@@ -163,9 +163,6 @@ nxt_python_start(nxt_task_t *task, nxt_process_data_t *data)
     static const char pyvenv[] = "/pyvenv.cfg";
     static const char bin_python[] = "/bin/python";
 #endif
-
-    static const nxt_str_t  wsgi = nxt_string("wsgi");
-    static const nxt_str_t  asgi = nxt_string("asgi");
 
     app_conf = data->app;
     c = &app_conf->u.python;
@@ -316,29 +313,7 @@ nxt_python_start(nxt_task_t *task, nxt_process_data_t *data)
     python_init.data = c;
     python_init.callbacks.ready_handler = nxt_python_ready_handler;
 
-    proto = c->protocol;
-
-    if (proto.length == 0) {
-        proto = nxt_python_asgi_check(targets->target[0].application)
-                ? asgi : wsgi;
-
-        for (i = 1; i < targets->count; i++) {
-            probe_proto = nxt_python_asgi_check(targets->target[i].application)
-                          ? asgi : wsgi;
-            if (probe_proto.start != proto.start) {
-                nxt_alert(task, "A mix of ASGI & WSGI targets is forbidden, "
-                                "specify protocol in config if incorrect");
-                goto fail;
-            }
-        }
-    }
-
-    if (nxt_strstr_eq(&proto, &asgi)) {
-        rc = nxt_python_asgi_init(&python_init, &nxt_py_proto);
-
-    } else {
-        rc = nxt_python_wsgi_init(&python_init, &nxt_py_proto);
-    }
+    rc = nxt_python_wsgi_init(&python_init, &nxt_py_proto);
 
     if (nxt_slow_path(rc == NXT_UNIT_ERROR)) {
         goto fail;
@@ -352,12 +327,6 @@ nxt_python_start(nxt_task_t *task, nxt_process_data_t *data)
     rc = nxt_python_init_threads(c);
     if (nxt_slow_path(rc == NXT_UNIT_ERROR)) {
         goto fail;
-    }
-
-    if (nxt_py_proto.startup != NULL) {
-        if (nxt_py_proto.startup(python_init.ctx_data) != NXT_UNIT_OK) {
-            goto fail;
-        }
     }
 
     unit_ctx = nxt_unit_init(&python_init);
@@ -668,12 +637,6 @@ nxt_python_thread_func(void *data)
                    (int) (ti - nxt_py_threads + 1));
 
     gstate = PyGILState_Ensure();
-
-    if (nxt_py_proto.startup != NULL) {
-        if (nxt_py_proto.startup(ti->ctx_data) != NXT_UNIT_OK) {
-            goto fail;
-        }
-    }
 
     ctx = nxt_unit_ctx_alloc(ti->ctx, ti->ctx_data);
     if (nxt_slow_path(ctx == NULL)) {
