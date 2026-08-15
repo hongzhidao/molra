@@ -10,18 +10,11 @@ client = ApplicationPHP()
 def test_php_application_targets():
     assert 'success' in client.conf(
         {
-            "listeners": {"*:8080": {"pass": "routes"}},
-            "routes": [
-                {
-                    "match": {"uri": "/1"},
-                    "action": {"pass": "applications/targets/1"},
-                },
-                {
-                    "match": {"uri": "/2"},
-                    "action": {"pass": "applications/targets/2"},
-                },
-                {"action": {"pass": "applications/targets/default"}},
-            ],
+            "listeners": {
+                "*:8080": {"pass": "applications/targets/default"},
+                "*:8081": {"pass": "applications/targets/1"},
+                "*:8082": {"pass": "applications/targets/2"},
+            },
             "applications": {
                 "targets": {
                     "type": "php",
@@ -45,11 +38,11 @@ def test_php_application_targets():
         }
     )
 
-    assert client.get(url='/1')['body'] == '1'
-    assert client.get(url='/2')['body'] == '2'
+    assert client.get(port=8081, url='/1')['body'] == '1'
+    assert client.get(port=8082, url='/2')['body'] == '2'
     assert client.get(url='/blah')['status'] == 503  # TODO 404
     assert client.get(url='/')['body'] == 'index'
-    assert client.get(url='/1.php?test=test.php/')['body'] == '1'
+    assert client.get(port=8081, url='/1.php?test=test.php/')['body'] == '1'
 
     assert 'success' in client.conf(
         "\"1.php\"", 'applications/targets/targets/default/index'

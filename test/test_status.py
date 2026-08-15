@@ -36,13 +36,10 @@ def test_status_requests(skip_alert):
     assert 'success' in client.conf(
         {
             "listeners": {
-                "*:8080": {"pass": "routes"},
+                "*:8080": {"pass": "applications/empty"},
                 "*:8081": {"pass": "applications/empty"},
                 "*:8082": {"pass": "applications/blah"},
             },
-            "routes": [
-                {"action": {"pass": "applications/empty"}},
-            ],
             "applications": {
                 "empty": app_default(),
                 "blah": {
@@ -96,12 +93,9 @@ def test_status_connections():
     assert 'success' in client.conf(
         {
             "listeners": {
-                "*:8080": {"pass": "routes"},
+                "*:8080": {"pass": "applications/empty"},
                 "*:8081": {"pass": "applications/delayed"},
             },
-            "routes": [
-                {"action": {"pass": "applications/empty"}},
-            ],
             "applications": {
                 "empty": app_default(),
                 "delayed": app_default("delayed"),
@@ -197,7 +191,6 @@ def test_status_applications():
                 "*:8080": {"pass": "applications/restart"},
                 "*:8081": {"pass": "applications/delayed"},
             },
-            "routes": [],
             "applications": {
                 "restart": app_default("restart", "longstart"),
                 "delayed": app_default("delayed"),

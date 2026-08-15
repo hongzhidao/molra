@@ -17,11 +17,7 @@ typedef struct nxt_http_request_s  nxt_http_request_t;
 
 
 typedef struct nxt_http_action_s               nxt_http_action_t;
-typedef struct nxt_http_routes_s               nxt_http_routes_t;
 typedef struct nxt_router_access_log_s         nxt_router_access_log_t;
-
-
-#define NXT_HTTP_ACTION_ERROR  ((nxt_http_action_t *) -1)
 
 
 typedef struct {
@@ -41,7 +37,6 @@ typedef struct {
 
     nxt_mp_t                        *mem_pool;
     nxt_router_t                    *router;
-    nxt_http_routes_t               *routes;
 
     nxt_lvlhsh_t                    apps_hash;
 

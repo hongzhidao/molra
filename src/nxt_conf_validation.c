@@ -84,34 +84,6 @@ static nxt_int_t nxt_conf_vldt_threads(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_thread_stack_size(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_routes(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_routes_member(nxt_conf_validation_t *vldt,
-    nxt_str_t *name, nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_route(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_match_encoded_patterns_sets(
-    nxt_conf_validation_t *vldt, nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_match_encoded_patterns_set(
-    nxt_conf_validation_t *vldt, nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_match_encoded_patterns_set_member(
-    nxt_conf_validation_t *vldt, nxt_str_t *name, nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_match_encoded_patterns(
-    nxt_conf_validation_t *vldt, nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_match_encoded_pattern(
-    nxt_conf_validation_t *vldt, nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_match_patterns(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_match_pattern(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_match_patterns_sets(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_match_patterns_set(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_match_patterns_set_member(
-    nxt_conf_validation_t *vldt, nxt_str_t *name, nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_match_scheme_pattern(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_app_name(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_app(nxt_conf_validation_t *vldt,
@@ -154,8 +126,6 @@ static nxt_int_t nxt_conf_vldt_clone_gidmap(nxt_conf_validation_t *vldt,
 
 static nxt_conf_vldt_object_t  nxt_conf_vldt_setting_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_http_members[];
-static nxt_conf_vldt_object_t  nxt_conf_vldt_match_members[];
-static nxt_conf_vldt_object_t  nxt_conf_vldt_pass_action_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_python_target_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_php_common_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_php_options_members[];
@@ -181,10 +151,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_root_members[] = {
         .type       = NXT_CONF_VLDT_OBJECT,
         .validator  = nxt_conf_vldt_object_iterator,
         .u.object   = nxt_conf_vldt_listener,
-    }, {
-        .name       = nxt_string("routes"),
-        .type       = NXT_CONF_VLDT_ARRAY | NXT_CONF_VLDT_OBJECT,
-        .validator  = nxt_conf_vldt_routes,
     }, {
         .name       = nxt_string("applications"),
         .type       = NXT_CONF_VLDT_OBJECT,
@@ -251,80 +217,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_listener_members[] = {
         .name       = nxt_string("application"),
         .type       = NXT_CONF_VLDT_STRING,
         .validator  = nxt_conf_vldt_app_name,
-    },
-
-    NXT_CONF_VLDT_END
-};
-
-
-static nxt_conf_vldt_object_t  nxt_conf_vldt_route_members[] = {
-    {
-        .name       = nxt_string("match"),
-        .type       = NXT_CONF_VLDT_OBJECT,
-        .validator  = nxt_conf_vldt_object,
-        .u.members  = nxt_conf_vldt_match_members,
-    }, {
-        .name       = nxt_string("action"),
-        .type       = NXT_CONF_VLDT_OBJECT,
-        .validator  = nxt_conf_vldt_object,
-        .u.members  = nxt_conf_vldt_pass_action_members,
-    },
-
-    NXT_CONF_VLDT_END
-};
-
-
-static nxt_conf_vldt_object_t  nxt_conf_vldt_match_members[] = {
-    {
-        .name       = nxt_string("method"),
-        .type       = NXT_CONF_VLDT_STRING | NXT_CONF_VLDT_ARRAY,
-        .validator  = nxt_conf_vldt_match_patterns,
-        .u.string   = "method",
-    }, {
-        .name       = nxt_string("scheme"),
-        .type       = NXT_CONF_VLDT_STRING,
-        .validator  = nxt_conf_vldt_match_scheme_pattern,
-    }, {
-        .name       = nxt_string("host"),
-        .type       = NXT_CONF_VLDT_STRING | NXT_CONF_VLDT_ARRAY,
-        .validator  = nxt_conf_vldt_match_patterns,
-        .u.string   = "host",
-    }, {
-        .name       = nxt_string("uri"),
-        .type       = NXT_CONF_VLDT_STRING | NXT_CONF_VLDT_ARRAY,
-        .validator  = nxt_conf_vldt_match_encoded_patterns,
-        .u.string   = "uri"
-    }, {
-        .name       = nxt_string("query"),
-        .type       = NXT_CONF_VLDT_STRING | NXT_CONF_VLDT_ARRAY,
-        .validator  = nxt_conf_vldt_match_encoded_patterns,
-        .u.string   = "query"
-    }, {
-        .name       = nxt_string("arguments"),
-        .type       = NXT_CONF_VLDT_OBJECT | NXT_CONF_VLDT_ARRAY,
-        .validator  = nxt_conf_vldt_match_encoded_patterns_sets,
-    }, {
-        .name       = nxt_string("headers"),
-        .type       = NXT_CONF_VLDT_OBJECT | NXT_CONF_VLDT_ARRAY,
-        .validator  = nxt_conf_vldt_match_patterns_sets,
-        .u.string   = "headers"
-    }, {
-        .name       = nxt_string("cookies"),
-        .type       = NXT_CONF_VLDT_OBJECT | NXT_CONF_VLDT_ARRAY,
-        .validator  = nxt_conf_vldt_match_patterns_sets,
-        .u.string   = "cookies"
-    },
-
-    NXT_CONF_VLDT_END
-};
-
-
-static nxt_conf_vldt_object_t  nxt_conf_vldt_pass_action_members[] = {
-    {
-        .name       = nxt_string("pass"),
-        .type       = NXT_CONF_VLDT_STRING,
-        .flags      = NXT_CONF_VLDT_REQUIRED,
-        .validator  = nxt_conf_vldt_pass,
     },
 
     NXT_CONF_VLDT_END
@@ -932,39 +824,6 @@ nxt_conf_vldt_pass(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
         return NXT_OK;
     }
 
-    if (nxt_str_eq(&segments[0], "routes", 6)) {
-
-        if (segments[2].length != 0) {
-            goto error;
-        }
-
-        value = nxt_conf_get_object_member(vldt->conf, &segments[0], NULL);
-
-        if (value == NULL) {
-            goto error;
-        }
-
-        if (segments[1].length == 0) {
-            if (nxt_conf_type(value) != NXT_CONF_ARRAY) {
-                goto error;
-            }
-
-            return NXT_OK;
-        }
-
-        if (nxt_conf_type(value) != NXT_CONF_OBJECT) {
-            goto error;
-        }
-
-        value = nxt_conf_get_object_member(value, &segments[1], NULL);
-
-        if (value == NULL) {
-            goto error;
-        }
-
-        return NXT_OK;
-    }
-
 error:
 
     return nxt_conf_vldt_error(vldt, "Request \"pass\" points to invalid "
@@ -1018,6 +877,7 @@ nxt_conf_vldt_python_path_element(nxt_conf_validation_t *vldt,
     return NXT_OK;
 }
 
+
 static nxt_int_t
 nxt_conf_vldt_threads(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
     void *data)
@@ -1062,295 +922,6 @@ nxt_conf_vldt_thread_stack_size(nxt_conf_validation_t *vldt,
     }
 
     return NXT_OK;
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_routes(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
-{
-    if (nxt_conf_type(value) == NXT_CONF_ARRAY) {
-        return nxt_conf_vldt_array_iterator(vldt, value,
-                                            &nxt_conf_vldt_route);
-    }
-
-    /* NXT_CONF_OBJECT */
-
-    return nxt_conf_vldt_object_iterator(vldt, value,
-                                         &nxt_conf_vldt_routes_member);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_routes_member(nxt_conf_validation_t *vldt, nxt_str_t *name,
-    nxt_conf_value_t *value)
-{
-    nxt_int_t  ret;
-
-    ret = nxt_conf_vldt_type(vldt, name, value, NXT_CONF_VLDT_ARRAY);
-
-    if (ret != NXT_OK) {
-        return ret;
-    }
-
-    return nxt_conf_vldt_array_iterator(vldt, value, &nxt_conf_vldt_route);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_route(nxt_conf_validation_t *vldt, nxt_conf_value_t *value)
-{
-    if (nxt_conf_type(value) != NXT_CONF_OBJECT) {
-        return nxt_conf_vldt_error(vldt, "The \"routes\" array must contain "
-                                   "only object values.");
-    }
-
-    return nxt_conf_vldt_object(vldt, value, nxt_conf_vldt_route_members);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_match_patterns(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data)
-{
-    nxt_int_t  ret;
-
-    vldt->ctx = data;
-
-    if (nxt_conf_type(value) == NXT_CONF_ARRAY) {
-        ret = nxt_conf_vldt_array_iterator(vldt, value,
-                                           &nxt_conf_vldt_match_pattern);
-
-    } else {
-        /* NXT_CONF_STRING */
-        ret = nxt_conf_vldt_match_pattern(vldt, value);
-    }
-
-    vldt->ctx = NULL;
-
-    return ret;
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_match_pattern(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value)
-{
-    nxt_str_t   pattern;
-    nxt_uint_t  i, first, last;
-
-    if (nxt_conf_type(value) != NXT_CONF_STRING) {
-        return nxt_conf_vldt_error(vldt, "The \"match\" pattern for \"%s\" "
-                                   "must be strings.", vldt->ctx);
-    }
-
-    nxt_conf_get_string(value, &pattern);
-
-    if (pattern.length == 0) {
-        return NXT_OK;
-    }
-
-    first = (pattern.start[0] == '!');
-
-    if (first < pattern.length && pattern.start[first] == '~') {
-        return nxt_conf_vldt_error(vldt, "Regular expression match patterns "
-                                   "are not supported.");
-    }
-
-    last = pattern.length - 1;
-
-    for (i = first; i < last; i++) {
-        if (pattern.start[i] == '*' && pattern.start[i + 1] == '*') {
-            return nxt_conf_vldt_error(vldt, "The \"match\" pattern must "
-                                       "not contain double \"*\" markers.");
-        }
-    }
-
-    return NXT_OK;
-}
-
-
-static nxt_int_t nxt_conf_vldt_match_encoded_patterns_sets(
-    nxt_conf_validation_t *vldt, nxt_conf_value_t *value, void *data)
-{
-    if (nxt_conf_type(value) == NXT_CONF_ARRAY) {
-        return nxt_conf_vldt_array_iterator(vldt, value,
-                                     &nxt_conf_vldt_match_encoded_patterns_set);
-    }
-
-    /* NXT_CONF_OBJECT */
-
-    return nxt_conf_vldt_match_encoded_patterns_set(vldt, value);
-}
-
-
-static nxt_int_t nxt_conf_vldt_match_encoded_patterns_set(
-    nxt_conf_validation_t *vldt, nxt_conf_value_t *value)
-{
-    if (nxt_conf_type(value) != NXT_CONF_OBJECT) {
-        return nxt_conf_vldt_error(vldt, "The \"match\" pattern for "
-                                   "\"arguments\" must be an object.");
-    }
-
-    return nxt_conf_vldt_object_iterator(vldt, value,
-                              &nxt_conf_vldt_match_encoded_patterns_set_member);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_match_encoded_patterns_set_member(nxt_conf_validation_t *vldt,
-    nxt_str_t *name, nxt_conf_value_t *value)
-{
-    u_char  *p, *end;
-
-    if (nxt_slow_path(name->length == 0)) {
-        return nxt_conf_vldt_error(vldt, "The \"match\" pattern objects must "
-                                   "not contain empty member names.");
-    }
-
-    p = nxt_mp_nget(vldt->pool, name->length);
-    if (nxt_slow_path(p == NULL)) {
-        return NXT_ERROR;
-    }
-
-    end = nxt_decode_uri(p, name->start, name->length);
-    if (nxt_slow_path(end == NULL)) {
-        return nxt_conf_vldt_error(vldt, "The \"match\" pattern for "
-                                   "\"arguments\" is encoded but is invalid.");
-    }
-
-    return nxt_conf_vldt_match_encoded_patterns(vldt, value,
-                                                (void *) "arguments");
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_match_encoded_patterns(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data)
-{
-    nxt_int_t  ret;
-
-    vldt->ctx = data;
-
-    if (nxt_conf_type(value) == NXT_CONF_ARRAY) {
-        ret = nxt_conf_vldt_array_iterator(vldt, value,
-                                          &nxt_conf_vldt_match_encoded_pattern);
-
-    } else {
-        /* NXT_CONF_STRING */
-        ret = nxt_conf_vldt_match_encoded_pattern(vldt, value);
-    }
-
-    vldt->ctx = NULL;
-
-    return ret;
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_match_encoded_pattern(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value)
-{
-    u_char     *p, *end;
-    nxt_int_t  ret;
-    nxt_str_t  pattern;
-
-    if (nxt_conf_type(value) != NXT_CONF_STRING) {
-        return nxt_conf_vldt_error(vldt, "The \"match\" pattern for \"%s\" "
-                                   "must be a string.", vldt->ctx);
-    }
-
-    ret = nxt_conf_vldt_match_pattern(vldt, value);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        return ret;
-    }
-
-    nxt_conf_get_string(value, &pattern);
-
-    p = nxt_mp_nget(vldt->pool, pattern.length);
-    if (nxt_slow_path(p == NULL)) {
-        return NXT_ERROR;
-    }
-
-    end = nxt_decode_uri(p, pattern.start, pattern.length);
-    if (nxt_slow_path(end == NULL)) {
-        return nxt_conf_vldt_error(vldt, "The \"match\" pattern for \"%s\" "
-                                   "is encoded but is invalid.", vldt->ctx);
-    }
-
-    return NXT_OK;
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_match_scheme_pattern(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data)
-{
-    nxt_str_t  scheme;
-
-    static const nxt_str_t  http = nxt_string("http");
-    static const nxt_str_t  https = nxt_string("https");
-
-    nxt_conf_get_string(value, &scheme);
-
-    if (nxt_strcasestr_eq(&scheme, &http)
-        || nxt_strcasestr_eq(&scheme, &https))
-    {
-        return NXT_OK;
-    }
-
-    return nxt_conf_vldt_error(vldt, "The \"scheme\" can either be "
-                                     "\"http\" or \"https\".");
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_match_patterns_sets(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data)
-{
-    nxt_int_t  ret;
-
-    vldt->ctx = data;
-
-    if (nxt_conf_type(value) == NXT_CONF_ARRAY) {
-        ret = nxt_conf_vldt_array_iterator(vldt, value,
-                                           &nxt_conf_vldt_match_patterns_set);
-
-    } else {
-        /* NXT_CONF_OBJECT */
-        ret = nxt_conf_vldt_match_patterns_set(vldt, value);
-    }
-
-    vldt->ctx = NULL;
-
-    return ret;
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_match_patterns_set(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value)
-{
-    if (nxt_conf_type(value) != NXT_CONF_OBJECT) {
-        return nxt_conf_vldt_error(vldt, "The \"match\" patterns for "
-                                   "\"%s\" must be objects.", vldt->ctx);
-    }
-
-    return nxt_conf_vldt_object_iterator(vldt, value,
-                                     &nxt_conf_vldt_match_patterns_set_member);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_match_patterns_set_member(nxt_conf_validation_t *vldt,
-    nxt_str_t *name, nxt_conf_value_t *value)
-{
-    if (name->length == 0) {
-        return nxt_conf_vldt_error(vldt, "The \"match\" pattern objects must "
-                                   "not contain empty member names.");
-    }
-
-    return nxt_conf_vldt_match_patterns(vldt, value, vldt->ctx);
 }
 
 

@@ -1448,12 +1448,11 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     nxt_port_t                  *port;
     nxt_router_t                *router;
     nxt_app_joint_t             *app_joint;
-    nxt_conf_value_t            *root, *conf, *http, *value;
+    nxt_conf_value_t            *root, *http, *value;
     nxt_conf_value_t            *applications, *application;
     nxt_conf_value_t            *listeners, *listener;
     nxt_socket_conf_t           *skcf;
     nxt_router_conf_t           *rtcf;
-    nxt_http_routes_t           *routes;
     nxt_event_engine_t          *engine;
     nxt_app_lang_module_t       *lang;
     nxt_router_app_conf_t       apcf;
@@ -1462,7 +1461,6 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     static nxt_str_t  http_path = nxt_string("/settings/http");
     static nxt_str_t  applications_path = nxt_string("/applications");
     static nxt_str_t  listeners_path = nxt_string("/listeners");
-    static nxt_str_t  routes_path = nxt_string("/routes");
     static nxt_str_t  access_log_path = nxt_string("/access_log");
 
     root = nxt_conf_json_parse(tmcf->mem_pool, start, end, NULL);
@@ -1722,16 +1720,6 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
         }
     }
 
-    conf = nxt_conf_get_path(root, &routes_path);
-    if (nxt_fast_path(conf != NULL)) {
-        routes = nxt_http_routes_create(task, tmcf, conf);
-        if (nxt_slow_path(routes == NULL)) {
-            return NXT_ERROR;
-        }
-
-        rtcf->routes = routes;
-    }
-
     http = nxt_conf_get_path(root, &http_path);
 #if 0
     if (http == NULL) {
@@ -1815,11 +1803,6 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
                 goto fail;
             }
         }
-    }
-
-    ret = nxt_http_routes_resolve(tmcf);
-    if (nxt_slow_path(ret != NXT_OK)) {
-        goto fail;
     }
 
     value = nxt_conf_get_path(root, &access_log_path);
@@ -2056,7 +2039,7 @@ nxt_router_application_init(nxt_router_conf_t *rtcf, nxt_str_t *name,
     }
 
     action->handler = nxt_http_application_handler;
-    action->u.conf = conf;
+    action->conf = conf;
 
     conf->app = app;
 
@@ -4430,7 +4413,7 @@ nxt_router_process_http_request(nxt_task_t *task, nxt_http_request_t *r,
     nxt_http_app_conf_t     *conf;
     nxt_request_rpc_data_t  *req_rpc_data;
 
-    conf = action->u.conf;
+    conf = action->conf;
     engine = task->thread->engine;
 
     r->app_target = conf->target;

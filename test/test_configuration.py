@@ -25,10 +25,7 @@ def empty_application():
 def try_addr(addr):
     return client.conf(
         {
-            "listeners": {addr: {"pass": "routes"}},
-            "routes": [
-                {"action": {"pass": "applications/empty"}},
-            ],
+            "listeners": {addr: {"pass": "applications/empty"}},
             "applications": {"empty": empty_application()},
         }
     )
@@ -243,19 +240,21 @@ def test_listeners_no_app():
         {"*:8080": {"pass": "applications/app"}}, 'listeners'
     ), 'listeners no app'
 
+
+def test_routes_unsupported():
+    assert 'error' in client.conf([], 'routes'), 'routes unsupported'
+
+
 def test_listeners_forward_invalid():
     def check_error(option):
         assert 'error' in client.conf(
             {
                 "listeners": {
                     "*:8080": {
-                        "pass": "routes",
+                        "pass": "applications/empty",
                         **option,
                     },
                 },
-                "routes": [
-                    {"action": {"pass": "applications/empty"}},
-                ],
                 "applications": {"empty": empty_application()},
             }
         )
@@ -300,8 +299,12 @@ def test_listeners_port_release():
 
             client.conf(
                 {
-                    "listeners": {"127.0.0.1:8080": {"pass": "routes"}},
-                    "routes": [],
+                    "listeners": {
+                        "127.0.0.1:8080": {
+                            "pass": "applications/empty"
+                        }
+                    },
+                    "applications": {"empty": empty_application()},
                 }
             )
 
