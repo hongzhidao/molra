@@ -1,4 +1,18 @@
 
+Changes with Unit 1.28.0                                         15 Aug 2026
+
+    *) Change: application support is now limited to PHP; Java, Node.js,
+       Perl, Ruby, Go, and Python application support was removed.
+
+    *) Change: TLS, variables and NJS, rewrite, response_headers, static
+       file serving, forwarded and client IP, proxy, WebSocket, regular
+       expression, routes, and return action support was removed.
+
+    *) Change: unused cache, source and filter, vector, and fiber code was
+       removed, together with thread pools and application process
+       multithreading.
+
+
 Changes with Unit 1.27.0                                         01 Aug 2026
 
     *) Change: selected fixes and features from later Unit releases were

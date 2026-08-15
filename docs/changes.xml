@@ -5,12 +5,8 @@
 <change_log title="unit">
 
 
-<changes apply="unit-php
-                unit-python unit-python2.7
-                unit-python3.4 unit-python3.5 unit-python3.6 unit-python3.7
-                unit-python3.8 unit-python3.9 unit-python3.10"
-         ver="1.28.0" rev="1"
-         date="" time=""
+<changes apply="unit-php" ver="1.28.0" rev="1"
+         date="2026-08-15" time="09:17:56 +0000"
          packager="Zhidao HONG &lt;hongzhidao@gmail.com&gt;">
 
 <change>
@@ -23,36 +19,28 @@ NGINX Unit updated to 1.28.0.
 
 
 <changes apply="unit" ver="1.28.0" rev="1"
-         date="" time=""
+         date="2026-08-15" time="09:17:56 +0000"
          packager="Zhidao HONG &lt;hongzhidao@gmail.com&gt;">
 
 <change type="change">
 <para>
-Java application support has been removed.
+application support is now limited to PHP; Java, Node.js, Perl, Ruby, Go,
+and Python application support was removed.
 </para>
 </change>
 
 <change type="change">
 <para>
-Node.js application support has been removed.
+TLS, variables and NJS, rewrite, response_headers, static file serving,
+forwarded and client IP, proxy, WebSocket, regular expression, routes, and
+return action support was removed.
 </para>
 </change>
 
 <change type="change">
 <para>
-Perl application support has been removed.
-</para>
-</change>
-
-<change type="change">
-<para>
-Ruby application support has been removed.
-</para>
-</change>
-
-<change type="change">
-<para>
-Go application support has been removed.
+unused cache, source and filter, vector, and fiber code was removed,
+together with thread pools and application process multithreading.
 </para>
 </change>
 
