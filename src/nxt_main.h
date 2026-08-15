@@ -24,8 +24,6 @@ typedef struct nxt_runtime_s         nxt_runtime_t;
 typedef struct nxt_thread_s          nxt_thread_t;
 typedef struct nxt_event_engine_s    nxt_event_engine_t;
 typedef struct nxt_log_s             nxt_log_t;
-typedef struct nxt_thread_pool_s     nxt_thread_pool_t;
-
 typedef void (*nxt_work_handler_t)(nxt_task_t *task, void *obj, void *data);
 
 #include <nxt_unix.h>
@@ -90,8 +88,6 @@ typedef struct {
 
 #include <nxt_mem_zone.h>
 #include <nxt_signal.h>
-#include <nxt_semaphore.h>
-
 #include <nxt_djb_hash.h>
 #include <nxt_murmur_hash.h>
 #include <nxt_hash.h>
@@ -125,18 +121,12 @@ nxt_thread_extern_data(nxt_thread_t, nxt_thread_context);
 #include <nxt_port.h>
 #include <nxt_port_memory.h>
 #include <nxt_port_rpc.h>
-#include <nxt_thread_pool.h>
-
-
 typedef void (*nxt_event_conn_handler_t)(nxt_thread_t *thr, nxt_conn_t *c);
 #include <nxt_listen_socket.h>
 
 #include <nxt_conn.h>
 #include <nxt_event_engine.h>
 
-#include <nxt_job.h>
-
-#include <nxt_job_resolve.h>
 #include <nxt_sockaddr.h>
 
 #include <nxt_http_parse.h>

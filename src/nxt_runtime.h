@@ -28,9 +28,6 @@ struct nxt_runtime_s {
 
     nxt_file_name_t        *pid_file;
 
-    nxt_array_t            *thread_pools;       /* of nxt_thread_pool_t */
-    nxt_runtime_cont_t     continuation;
-
     nxt_process_t          *mprocess;
     size_t                 nprocesses;
     nxt_thread_mutex_t     processes_mutex;
@@ -54,7 +51,6 @@ struct nxt_runtime_s {
 
     const char             *engine;
     uint32_t               engine_connections;
-    uint32_t               auxiliary_threads;
     nxt_credential_t       user_cred;
     nxt_capabilities_t     capabilities;
     const char             *group;
@@ -86,10 +82,6 @@ nxt_int_t nxt_runtime_create(nxt_task_t *task);
 void nxt_runtime_quit(nxt_task_t *task, nxt_uint_t status);
 
 void nxt_runtime_event_engine_free(nxt_runtime_t *rt);
-
-nxt_int_t nxt_runtime_thread_pool_create(nxt_thread_t *thr, nxt_runtime_t *rt,
-    nxt_uint_t max_threads, nxt_nsec_t timeout);
-
 
 void nxt_runtime_process_add(nxt_task_t *task, nxt_process_t *process);
 void nxt_runtime_process_remove(nxt_runtime_t *rt, nxt_process_t *process);

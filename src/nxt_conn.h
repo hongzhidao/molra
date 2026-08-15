@@ -28,15 +28,6 @@ typedef struct {
 
 
 typedef struct {
-    double                        average;
-    size_t                        limit;
-    size_t                        limit_after;
-    size_t                        max_limit;
-    nxt_msec_t                    last;
-} nxt_event_write_rate_t;
-
-
-typedef struct {
 
     nxt_work_handler_t            connect;
     nxt_work_handler_t            accept;
@@ -65,21 +56,6 @@ typedef struct {
      */
     ssize_t                       (*sendbuf)(nxt_task_t *task,
                                        nxt_sendbuf_t *sb);
-    /*
-     * The sendbuf() is an interface for OS-specific sendfile
-     * implementations or simple writev().
-     */
-    ssize_t                       (*old_sendbuf)(nxt_conn_t *c, nxt_buf_t *b,
-                                      size_t limit);
-    /*
-     * The writev() is an interface to write several nxt_iobuf_t buffers.
-     */
-    ssize_t                       (*writev)(nxt_conn_t *c,
-                                      nxt_iobuf_t *iob, nxt_uint_t niob);
-    /* The send() is an interface to write a single buffer. */
-    ssize_t                       (*send)(nxt_conn_t *c, void *buf,
-                                      size_t size);
-
     nxt_work_handler_t            shutdown;
 } nxt_conn_io_t;
 
@@ -127,16 +103,12 @@ struct nxt_conn_s {
     nxt_buf_t                     *write;
     const nxt_conn_state_t        *write_state;
     nxt_work_queue_t              *write_work_queue;
-    nxt_event_write_rate_t        *rate;
     nxt_timer_t                   write_timer;
 
     nxt_off_t                     sent;
-    uint32_t                      max_chunk;
     uint32_t                      nbytes;
 
     nxt_conn_io_t                 *io;
-
-    nxt_thread_pool_t             *thread_pool;
 
     nxt_mp_t                      *mem_pool;
 
@@ -248,17 +220,6 @@ ssize_t nxt_conn_io_writev(nxt_task_t *task, nxt_sendbuf_t *sb,
     nxt_iobuf_t *iob, nxt_uint_t niob);
 ssize_t nxt_conn_io_send(nxt_task_t *task, nxt_sendbuf_t *sb, void *buf,
     size_t size);
-
-size_t nxt_event_conn_write_limit(nxt_conn_t *c);
-nxt_bool_t nxt_event_conn_write_delayed(nxt_event_engine_t *engine,
-    nxt_conn_t *c, size_t sent);
-ssize_t nxt_event_conn_io_writev(nxt_conn_t *c, nxt_iobuf_t *iob,
-    nxt_uint_t niob);
-ssize_t nxt_event_conn_io_send(nxt_conn_t *c, void *buf, size_t size);
-
-NXT_EXPORT void nxt_event_conn_job_sendfile(nxt_task_t *task,
-    nxt_conn_t *c);
-
 
 #define nxt_conn_connect(engine, c)                                           \
     nxt_work_queue_add(&engine->socket_work_queue, nxt_conn_sys_socket,       \

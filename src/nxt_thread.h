@@ -151,7 +151,6 @@ struct nxt_thread_s {
     nxt_tid_t                tid;
     nxt_thread_handle_t      handle;
     nxt_thread_link_t        *link;
-    nxt_thread_pool_t        *thread_pool;
 
     nxt_thread_time_t        time;
 

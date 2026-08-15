@@ -66,52 +66,10 @@ typedef struct {
 } nxt_sendbuf_coalesce_t;
 
 
-#if (NXT_HAVE_LINUX_SENDFILE)
-#define NXT_HAVE_SENDFILE  1
-ssize_t nxt_linux_event_conn_io_sendfile(nxt_conn_t *c, nxt_buf_t *b,
-    size_t limit);
-#endif
-
-#if (NXT_HAVE_FREEBSD_SENDFILE)
-#define NXT_HAVE_SENDFILE  1
-ssize_t nxt_freebsd_event_conn_io_sendfile(nxt_conn_t *c, nxt_buf_t *b,
-    size_t limit);
-#endif
-
-#if (NXT_HAVE_SOLARIS_SENDFILEV)
-#define NXT_HAVE_SENDFILE  1
-ssize_t nxt_solaris_event_conn_io_sendfilev(nxt_conn_t *c, nxt_buf_t *b,
-    size_t limit);
-#endif
-
-#if (NXT_HAVE_MACOSX_SENDFILE)
-#define NXT_HAVE_SENDFILE  1
-ssize_t nxt_macosx_event_conn_io_sendfile(nxt_conn_t *c, nxt_buf_t *b,
-    size_t limit);
-#endif
-
-#if (NXT_HAVE_AIX_SEND_FILE)
-#define NXT_HAVE_SENDFILE  1
-ssize_t nxt_aix_event_conn_io_send_file(nxt_conn_t *c, nxt_buf_t *b,
-    size_t limit);
-#endif
-
-#if (NXT_HAVE_HPUX_SENDFILE)
-#define NXT_HAVE_SENDFILE  1
-ssize_t nxt_hpux_event_conn_io_sendfile(nxt_conn_t *c, nxt_buf_t *b,
-    size_t limit);
-#endif
-
-ssize_t nxt_event_conn_io_sendbuf(nxt_conn_t *c, nxt_buf_t *b,
-    size_t limit);
-
-
 nxt_uint_t nxt_sendbuf_mem_coalesce0(nxt_task_t *task, nxt_sendbuf_t *sb,
     struct iovec *iov, nxt_uint_t niov_max);
 nxt_uint_t nxt_sendbuf_mem_coalesce(nxt_task_t *task,
     nxt_sendbuf_coalesce_t *sb);
-size_t nxt_sendbuf_file_coalesce(nxt_sendbuf_coalesce_t *sb);
-
 nxt_buf_t *nxt_sendbuf_update(nxt_buf_t *b, size_t sent);
 nxt_buf_t *nxt_sendbuf_completion(nxt_task_t *task, nxt_work_queue_t *wq,
     nxt_buf_t *b);

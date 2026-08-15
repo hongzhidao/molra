@@ -32,14 +32,6 @@
 #include <malloc.h>                 /* malloc_usable_size(). */
 #include <sys/syscall.h>            /* syscall(SYS_gettid). */
 
-#if (__GLIBC__ >= 2 && __GLIBC_MINOR__ >= 4)
-/*
- * POSIX semaphores using NPTL atomic/futex operations
- * were introduced during glibc 2.3 development time.
- */
-#define NXT_HAVE_SEM_TRYWAIT_FAST  1
-#endif
-
 #endif /* NXT_LINUX */
 
 
@@ -47,11 +39,6 @@
 
 #if (NXT_HAVE_MALLOC_USABLE_SIZE)
 #include <malloc_np.h>              /* malloc_usable_size(). */
-#endif
-
-#if (__FreeBSD_version >= 900007)
-/* POSIX semaphores using atomic/umtx. */
-#define NXT_HAVE_SEM_TRYWAIT_FAST  1
 #endif
 
 #endif /* NXT_FREEBSD */
@@ -152,7 +139,6 @@
 #include <netinet/tcp.h>
 #include <poll.h>
 #include <pwd.h>
-#include <semaphore.h>
 #include <setjmp.h>
 #include <sched.h>
 #include <signal.h>
@@ -223,10 +209,6 @@
 #endif
 
 #if (NXT_HAVE_LINUX_SENDFILE)
-#include <sys/sendfile.h>
-#endif
-
-#if (NXT_HAVE_SOLARIS_SENDFILEV)
 #include <sys/sendfile.h>
 #endif
 
