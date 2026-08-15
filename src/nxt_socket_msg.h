@@ -93,11 +93,7 @@ nxt_socket_msg_oob_init(nxt_send_oob_t *oob, int *fds)
 
 #if (NXT_HAVE_MSGHDR_CMSGCRED)
     cmsg = (struct cmsghdr *) (oob->buf);
-    /*
-     * Fill all padding fields with 0.
-     * Code in Go 1.11 validate cmsghdr using padding field as part of len.
-     * See Cmsghdr definition and socketControlMessageHeaderAndData function.
-     */
+    /* Fill all padding fields with 0. */
     nxt_memzero(cmsg, sizeof(struct cmsghdr));
 
     cmsg->cmsg_len = CMSG_LEN(sizeof(nxt_socket_cred_t));

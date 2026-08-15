@@ -590,7 +590,7 @@ nxt_http_application_handler(nxt_task_t *task, nxt_http_request_t *r,
 
     /*
      * TODO: need an application flag to get local address
-     * required by "SERVER_ADDR" in Pyhton and PHP. Not used in Go.
+     * required by "SERVER_ADDR" in Python and PHP.
      */
     nxt_http_request_proto_info(task, r);
 

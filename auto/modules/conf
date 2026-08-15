@@ -13,10 +13,6 @@ case "$nxt_module" in
        . auto/modules/php
    ;;
 
-   go)
-       . auto/modules/go
-   ;;
-
    *)
        echo
        echo $0: error: invalid module \"$nxt_module\".

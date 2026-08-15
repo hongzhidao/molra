@@ -42,7 +42,6 @@ config.env.%: njs
 	cp -Pa $(CURDIR)/LICENSE $(BUILDDIR_$*)/
 	cp -Pa $(CURDIR)/NOTICE $(BUILDDIR_$*)/
 	cp -Pa $(CURDIR)/README $(BUILDDIR_$*)/
-	cp -Pa $(CURDIR)/go $(BUILDDIR_$*)/
 	mkdir -p $(BUILDDIR_$*)/docs/man
 	cp -Pa $(CURDIR)/docs/man/unitd.8.in $(BUILDDIR_$*)/docs/man/
 	touch $@

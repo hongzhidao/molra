@@ -1,7 +1,6 @@
 import json
 import os
 
-from unit.applications.lang.go import ApplicationGo
 from unit.http import HTTP1
 from unit.option import option
 from unit.utils import getns
@@ -14,23 +13,7 @@ def check_isolation():
     available = option.available
 
     conf = ''
-    if 'go' in available['modules']:
-        ApplicationGo().prepare_env('empty', 'app')
-
-        conf = {
-            "listeners": {"*:8080": {"pass": "applications/empty"}},
-            "applications": {
-                "empty": {
-                    "type": "external",
-                    "processes": {"spare": 0},
-                    "working_directory": option.test_dir + "/go/empty",
-                    "executable": option.temp_dir + "/go/app",
-                    "isolation": {"namespaces": {"credential": True}},
-                },
-            },
-        }
-
-    elif 'python' in available['modules']:
+    if 'python' in available['modules']:
         conf = {
             "listeners": {"*:8080": {"pass": "applications/empty"}},
             "applications": {

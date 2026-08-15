@@ -59,21 +59,18 @@ MODULES=
 ifeq ($(OSVER), centos6)
 include Makefile.php
 include Makefile.python
-include Makefile.go
 endif
 
 ifeq ($(OSVER), centos7)
 include Makefile.php
 include Makefile.python27
 include Makefile.python36
-include Makefile.go
 endif
 
 ifeq ($(OSVER), centos8)
 include Makefile.php
 include Makefile.python27
 include Makefile.python36
-include Makefile.go
 endif
 
 ifeq ($(OSVER), amazonlinux1)
@@ -82,27 +79,23 @@ include Makefile.python27
 include Makefile.python34
 include Makefile.python35
 include Makefile.python36
-include Makefile.go
 endif
 
 ifeq ($(OSVER), amazonlinux2)
 include Makefile.php
 include Makefile.python27
 include Makefile.python37
-include Makefile.go
 endif
 
 ifeq ($(OSVER), opensuse-leap)
 include Makefile.python27
 include Makefile.python34
-include Makefile.go
 endif
 
 ifeq ($(OSVER), opensuse-tumbleweed)
 include Makefile.php
 include Makefile.python27
 include Makefile.python36
-include Makefile.go
 endif
 
 ifeq ($(OSVER), sles)
@@ -126,13 +119,11 @@ include Makefile.python37
 else
 include Makefile.python36
 endif
-include Makefile.go
 endif
 
 ifeq ($(OSVER), fedora41)
 include Makefile.php
 include Makefile.python313
-include Makefile.go
 endif
 
 CONFIGURE_ARGS_COMMON=\
@@ -209,7 +200,7 @@ endif
 rpmbuild/SOURCES/unit-$(VERSION).tar.gz:
 	cd ../.. && tar -czf pkg/rpm/rpmbuild/SOURCES/unit-$(VERSION).tar.gz \
 		--transform "s#^#unit-$(VERSION)/#" \
-		LICENSE NOTICE CHANGES README configure auto src test version go pkg/contrib docs/man/unitd.8.in
+		LICENSE NOTICE CHANGES README configure auto src test version pkg/contrib docs/man/unitd.8.in
 
 unit: check-build-depends-unit rpmbuild/SPECS/unit.spec rpmbuild/SOURCES/unit-$(VERSION).tar.gz
 	@echo "===> Building $@ package" ; \

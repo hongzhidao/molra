@@ -10,7 +10,7 @@ PATCHLEVEL ?= 1
 
 EXPORT_DIR := $(VERSION)
 
-MODULES ?= go php python
+MODULES ?= php python
 
 VARIANT ?= bullseye
 
@@ -19,17 +19,6 @@ CONTAINER_minimal ?= debian:$(VARIANT)-slim
 CONFIGURE_minimal ?=
 INSTALL_minimal ?=	version
 define COPY_minimal
-endef
-
-VERSIONS_go ?=		1.17
-VARIANT_go ?=		$(VARIANT)
-$(foreach goversion, $(VERSIONS_go), $(eval CONTAINER_go$(goversion) = golang:$(goversion)-$(VARIANT_go)))
-CONFIGURE_go ?=		go --go-path=$$GOPATH
-INSTALL_go ?=		go-install-src libunit-install
-define COPY_go
-COPY --from=BUILDER /usr/lib/x86_64-linux-gnu/libunit.a /usr/lib/x86_64-linux-gnu/\n\$
-COPY --from=BUILDER /usr/include/nxt_* /usr/include/\n\$
-COPY --from=BUILDER /go/src/ /go/src/
 endef
 
 VERSIONS_php ?=		8.0

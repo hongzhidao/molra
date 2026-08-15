@@ -55,7 +55,4 @@ cat << END
   php OPTIONS          configure PHP module
                        run "./configure php --help" to see available options
 
-  go OPTIONS           configure Go module
-                       run "./configure go --help" to see available options
-
 END

@@ -25,7 +25,6 @@ include Makefile.php
 include Makefile.python27
 include Makefile.python39
 include Makefile.python310
-include Makefile.go
 endif
 
 # Ubuntu 21.04
@@ -33,7 +32,6 @@ ifeq ($(CODENAME),hirsute)
 include Makefile.php
 include Makefile.python27
 include Makefile.python39
-include Makefile.go
 endif
 
 # Ubuntu 20.04
@@ -41,7 +39,6 @@ ifeq ($(CODENAME),focal)
 include Makefile.php
 include Makefile.python27
 include Makefile.python38
-include Makefile.go
 endif
 
 # Ubuntu 18.04
@@ -51,7 +48,6 @@ include Makefile.python27
 include Makefile.python36
 include Makefile.python37
 include Makefile.python38
-include Makefile.go
 endif
 
 # Debian 11
@@ -59,7 +55,6 @@ ifeq ($(CODENAME),bullseye)
 include Makefile.php
 include Makefile.python27
 include Makefile.python39
-include Makefile.go
 endif
 
 # Debian 10
@@ -67,7 +62,6 @@ ifeq ($(CODENAME),buster)
 include Makefile.php
 include Makefile.python27
 include Makefile.python37
-include Makefile.go
 endif
 
 CONFIGURE_ARGS_COMMON=\
@@ -156,7 +150,7 @@ endif
 debuild/unit_$(VERSION).orig.tar.gz: | debuild/$(SRCDIR)/debian
 	cd ../.. && tar -czf pkg/deb/debuild/$(SRCDIR).tar.gz \
 		--transform "s#^#$(SRCDIR)/#" \
-		LICENSE NOTICE CHANGES README configure auto src test version go pkg/contrib docs/man/unitd.8.in
+		LICENSE NOTICE CHANGES README configure auto src test version pkg/contrib docs/man/unitd.8.in
 	mv debuild/$(SRCDIR).tar.gz debuild/unit_$(VERSION).orig.tar.gz
 	cd debuild && tar zxf unit_$(VERSION).orig.tar.gz
 
