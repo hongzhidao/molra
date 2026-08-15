@@ -72,11 +72,7 @@ static nxt_int_t nxt_conf_vldt_error(nxt_conf_validation_t *vldt,
     const char *fmt, ...);
 static nxt_int_t nxt_conf_vldt_listener(nxt_conf_validation_t *vldt,
     nxt_str_t *name, nxt_conf_value_t *value);
-static nxt_int_t nxt_conf_vldt_action(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_pass(nxt_conf_validation_t *vldt,
-    nxt_conf_value_t *value, void *data);
-static nxt_int_t nxt_conf_vldt_return(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
 static nxt_int_t nxt_conf_vldt_python(nxt_conf_validation_t *vldt,
     nxt_conf_value_t *value, void *data);
@@ -161,6 +157,7 @@ static nxt_int_t nxt_conf_vldt_clone_gidmap(nxt_conf_validation_t *vldt,
 static nxt_conf_vldt_object_t  nxt_conf_vldt_setting_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_http_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_match_members[];
+static nxt_conf_vldt_object_t  nxt_conf_vldt_pass_action_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_python_target_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_php_common_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_php_options_members[];
@@ -271,7 +268,8 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_route_members[] = {
     }, {
         .name       = nxt_string("action"),
         .type       = NXT_CONF_VLDT_OBJECT,
-        .validator  = nxt_conf_vldt_action,
+        .validator  = nxt_conf_vldt_object,
+        .u.members  = nxt_conf_vldt_pass_action_members,
     },
 
     NXT_CONF_VLDT_END
@@ -327,21 +325,8 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_pass_action_members[] = {
     {
         .name       = nxt_string("pass"),
         .type       = NXT_CONF_VLDT_STRING,
+        .flags      = NXT_CONF_VLDT_REQUIRED,
         .validator  = nxt_conf_vldt_pass,
-    },
-
-    NXT_CONF_VLDT_END
-};
-
-
-static nxt_conf_vldt_object_t  nxt_conf_vldt_return_action_members[] = {
-    {
-        .name       = nxt_string("return"),
-        .type       = NXT_CONF_VLDT_INTEGER,
-        .validator  = nxt_conf_vldt_return,
-    }, {
-        .name       = nxt_string("location"),
-        .type       = NXT_CONF_VLDT_STRING,
     },
 
     NXT_CONF_VLDT_END
@@ -896,51 +881,6 @@ nxt_conf_vldt_listener(nxt_conf_validation_t *vldt, nxt_str_t *name,
 
 
 static nxt_int_t
-nxt_conf_vldt_action(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
-{
-    nxt_uint_t              i;
-    nxt_conf_value_t        *action;
-    nxt_conf_vldt_object_t  *members;
-
-    static struct {
-        nxt_str_t               name;
-        nxt_conf_vldt_object_t  *members;
-
-    } actions[] = {
-        { nxt_string("pass"), nxt_conf_vldt_pass_action_members },
-        { nxt_string("return"), nxt_conf_vldt_return_action_members },
-    };
-
-    members = NULL;
-
-    for (i = 0; i < nxt_nitems(actions); i++) {
-        action = nxt_conf_get_object_member(value, &actions[i].name, NULL);
-
-        if (action == NULL) {
-            continue;
-        }
-
-        if (members != NULL) {
-            return nxt_conf_vldt_error(vldt, "The \"action\" object must have "
-                                       "just one of \"pass\" or \"return\" "
-                                       "options set.");
-        }
-
-        members = actions[i].members;
-    }
-
-    if (members == NULL) {
-        return nxt_conf_vldt_error(vldt, "The \"action\" object must have "
-                                   "either \"pass\" or \"return\" option "
-                                   "set.");
-    }
-
-    return nxt_conf_vldt_object(vldt, value, members);
-}
-
-
-static nxt_int_t
 nxt_conf_vldt_pass(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
     void *data)
 {
@@ -1035,23 +975,6 @@ error:
 
     return nxt_conf_vldt_error(vldt, "Request \"pass\" points to invalid "
                                "location \"%V\".", &pass);
-}
-
-
-static nxt_int_t
-nxt_conf_vldt_return(nxt_conf_validation_t *vldt, nxt_conf_value_t *value,
-    void *data)
-{
-    int64_t  status;
-
-    status = nxt_conf_get_number(value);
-
-    if (status < NXT_HTTP_INVALID || status > NXT_HTTP_STATUS_MAX) {
-        return nxt_conf_vldt_error(vldt, "The \"return\" value is out of "
-                                   "allowed HTTP status code range 0-999.");
-    }
-
-    return NXT_OK;
 }
 
 

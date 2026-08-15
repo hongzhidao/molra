@@ -522,16 +522,6 @@ static nxt_conf_map_t  nxt_http_route_action_conf[] = {
         NXT_CONF_MAP_PTR,
         offsetof(nxt_http_action_conf_t, pass)
     },
-    {
-        nxt_string("return"),
-        NXT_CONF_MAP_PTR,
-        offsetof(nxt_http_action_conf_t, ret)
-    },
-    {
-        nxt_string("location"),
-        NXT_CONF_MAP_STR,
-        offsetof(nxt_http_action_conf_t, location)
-    },
 };
 
 
@@ -542,7 +532,6 @@ nxt_http_action_init(nxt_router_temp_conf_t *tmcf, nxt_conf_value_t *cv,
     nxt_mp_t                *mp;
     nxt_int_t               ret;
     nxt_str_t               pass;
-    nxt_router_conf_t       *rtcf;
     nxt_http_action_conf_t  acf;
 
     nxt_memzero(&acf, sizeof(acf));
@@ -555,12 +544,7 @@ nxt_http_action_init(nxt_router_temp_conf_t *tmcf, nxt_conf_value_t *cv,
 
     nxt_memzero(action, sizeof(nxt_http_action_t));
 
-    rtcf = tmcf->router_conf;
-    mp = rtcf->mem_pool;
-
-    if (acf.ret != NULL) {
-        return nxt_http_return_init(rtcf, action, &acf);
-    }
+    mp = tmcf->router_conf->mem_pool;
 
     nxt_conf_get_string(acf.pass, &pass);
 

@@ -2,6 +2,7 @@ import socket
 
 import pytest
 from unit.control import Control
+from unit.option import option
 
 prerequisites = {'modules': {'python': 'any'}}
 
@@ -9,12 +10,26 @@ prerequisites = {'modules': {'python': 'any'}}
 client = Control()
 
 
+def empty_application():
+    path = option.test_dir + '/python/empty'
+
+    return {
+        "type": "python",
+        "processes": {"spare": 0},
+        "path": path,
+        "working_directory": path,
+        "module": "wsgi",
+    }
+
+
 def try_addr(addr):
     return client.conf(
         {
             "listeners": {addr: {"pass": "routes"}},
-            "routes": [{"action": {"return": 200}}],
-            "applications": {},
+            "routes": [
+                {"action": {"pass": "applications/empty"}},
+            ],
+            "applications": {"empty": empty_application()},
         }
     )
 
@@ -233,9 +248,15 @@ def test_listeners_forward_invalid():
         assert 'error' in client.conf(
             {
                 "listeners": {
-                    "*:8080": {"pass": "routes", **option},
+                    "*:8080": {
+                        "pass": "routes",
+                        **option,
+                    },
                 },
-                "routes": [{"action": {"return": 200}}],
+                "routes": [
+                    {"action": {"pass": "applications/empty"}},
+                ],
+                "applications": {"empty": empty_application()},
             }
         )
 

@@ -190,8 +190,6 @@ typedef struct nxt_http_route_rule_s       nxt_http_route_rule_t;
 
 typedef struct {
     nxt_conf_value_t                *pass;
-    nxt_conf_value_t                *ret;
-    nxt_str_t                       location;
 } nxt_http_action_conf_t;
 
 
@@ -289,9 +287,6 @@ nxt_int_t nxt_http_action_init(nxt_router_temp_conf_t *tmcf,
     nxt_conf_value_t *cv, nxt_http_action_t *action);
 void nxt_http_request_action(nxt_task_t *task, nxt_http_request_t *r,
     nxt_http_action_t *action);
-
-nxt_int_t nxt_http_return_init(nxt_router_conf_t *rtcf,
-    nxt_http_action_t *action, nxt_http_action_conf_t *acf);
 
 nxt_http_action_t *nxt_http_application_handler(nxt_task_t *task,
     nxt_http_request_t *r, nxt_http_action_t *action);

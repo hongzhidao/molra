@@ -9,15 +9,30 @@ prerequisites = {'modules': {'python': 'any'}}
 client = ApplicationProto()
 
 
+def empty_application():
+    path = option.test_dir + '/python/empty'
+
+    return {
+        "type": "python",
+        "processes": {"spare": 0},
+        "path": path,
+        "working_directory": path,
+        "module": "wsgi",
+    }
+
+
 @pytest.fixture(autouse=True)
 def setup_method_fixture():
     assert 'success' in client.conf(
         {
             "listeners": {"*:8080": {"pass": "routes"}},
             "routes": [
-                {"match": {"method": "GET"}, "action": {"return": 200},}
+                {
+                    "match": {"method": "GET"},
+                    "action": {"pass": "applications/empty"},
+                }
             ],
-            "applications": {},
+            "applications": {"empty": empty_application()},
         }
     ), 'routing configure'
 
@@ -26,12 +41,12 @@ def route(route):
 
 def route_match(match):
     assert 'success' in route(
-        {"match": match, "action": {"return": 200}}
+        {"match": match, "action": {"pass": "applications/empty"}}
     ), 'route match configure'
 
 def route_match_invalid(match):
     assert 'error' in route(
-        {"match": match, "action": {"return": 200}}
+        {"match": match, "action": {"pass": "applications/empty"}}
     ), 'route match configure invalid'
 
 def host(host, status):
@@ -323,7 +338,7 @@ def test_routes_route_empty():
 
 def test_routes_route_match_absent():
     assert 'success' in client.conf(
-        [{"action": {"return": 200}}], 'routes'
+        [{"action": {"pass": "applications/empty"}}], 'routes'
     ), 'route match absent configure'
 
     assert client.get()['status'] == 200, 'route match absent'
@@ -392,40 +407,56 @@ def test_routes_route_pass_invalid():
 
 def test_routes_action_proxy_invalid():
     assert 'error' in client.conf(
-        {"proxy": "http://127.0.0.1:8081", "return": 200}, 'routes/0/action'
+        {
+            "proxy": "http://127.0.0.1:8081",
+            "pass": "applications/empty",
+        },
+        'routes/0/action',
     ), 'proxy unsupported'
 
 
 def test_routes_action_share_invalid():
     assert 'error' in client.conf(
-        {"share": "/tmp", "return": 200}, 'routes/0/action'
+        {"share": "/tmp", "pass": "applications/empty"}, 'routes/0/action'
     ), 'share unsupported'
 
 
 def test_routes_action_rewrite_invalid():
     assert 'error' in client.conf(
-        {"rewrite": "/new", "return": 200}, 'routes/0/action'
+        {"rewrite": "/new", "pass": "applications/empty"}, 'routes/0/action'
     ), 'rewrite unsupported'
 
 
 def test_routes_action_response_headers_invalid():
     assert 'error' in client.conf(
-        {"response_headers": {"X-Foo": "foo"}, "return": 200},
+        {"response_headers": {"X-Foo": "foo"}, "pass": "applications/empty"},
         'routes/0/action',
     ), 'response_headers unsupported'
+
+
+def test_routes_action_return_invalid():
+    assert 'error' in client.conf(
+        {"return": 200}, 'routes/0/action'
+    ), 'return unsupported'
 
 
 def test_routes_rules_two():
     assert 'success' in client.conf(
         [
-            {"match": {"method": "GET"}, "action": {"return": 200}},
-            {"match": {"method": "POST"}, "action": {"return": 201}},
+            {
+                "match": {"method": "GET"},
+                "action": {"pass": "applications/empty"},
+            },
+            {
+                "match": {"method": "POST"},
+                "action": {"pass": "applications/empty"},
+            },
         ],
         'routes',
     ), 'rules two configure'
 
     assert client.get()['status'] == 200, 'rules two match first'
-    assert client.post()['status'] == 201, 'rules two match second'
+    assert client.post()['status'] == 200, 'rules two match second'
 
 def test_routes_two():
     assert 'success' in client.conf(
@@ -441,11 +472,11 @@ def test_routes_two():
                 "second": [
                     {
                         "match": {"host": "localhost"},
-                        "action": {"return": 200},
+                        "action": {"pass": "applications/empty"},
                     }
                 ],
             },
-            "applications": {},
+            "applications": {"empty": empty_application()},
         }
     ), 'routes two configure'
 
@@ -570,7 +601,7 @@ def test_routes_reconfigure():
     assert client.get()['status'] == 404, 'redefine request'
 
     assert 'success' in client.conf(
-        [{"action": {"return": 200}}], 'routes'
+        [{"action": {"pass": "applications/empty"}}], 'routes'
     ), 'redefine 2'
     assert client.get()['status'] == 200, 'redefine request 2'
 
@@ -580,8 +611,8 @@ def test_routes_reconfigure():
     assert 'success' in client.conf(
         {
             "listeners": {"*:8080": {"pass": "routes/main"}},
-            "routes": {"main": [{"action": {"return": 200}}]},
-            "applications": {},
+            "routes": {"main": [{"action": {"pass": "applications/empty"}}]},
+            "applications": {"empty": empty_application()},
         }
     ), 'redefine 4'
     assert client.get()['status'] == 200, 'redefine request 4'
@@ -590,15 +621,15 @@ def test_routes_reconfigure():
     assert client.get()['status'] == 404, 'redefine request 5'
 
     assert 'success' in client.conf_post(
-        {"action": {"return": 200}}, 'routes/main'
+        {"action": {"pass": "applications/empty"}}, 'routes/main'
     ), 'redefine 6'
     assert client.get()['status'] == 200, 'redefine request 6'
 
     assert 'error' in client.conf(
-        {"action": {"return": 200}}, 'routes/main/2'
+        {"action": {"pass": "applications/empty"}}, 'routes/main/2'
     ), 'redefine 7'
     assert 'success' in client.conf(
-        {"action": {"return": 201}}, 'routes/main/1'
+        {"action": {"pass": "applications/empty"}}, 'routes/main/1'
     ), 'redefine 8'
 
     assert len(client.conf_get('routes/main')) == 2, 'redefine conf 8'
@@ -611,7 +642,11 @@ def test_routes_edit():
     assert client.post()['status'] == 404, 'routes edit POST'
 
     assert 'success' in client.conf_post(
-        {"match": {"method": "POST"}, "action": {"return": 200}}, 'routes',
+        {
+            "match": {"method": "POST"},
+            "action": {"pass": "applications/empty"},
+        },
+        'routes',
     ), 'routes edit configure 2'
     assert 'GET' == client.conf_get(
         'routes/0/match/method'
@@ -651,7 +686,11 @@ def test_routes_edit():
     assert client.post()['status'] == 404, 'routes edit POST 5'
 
     assert 'success' in client.conf_post(
-        {"match": {"method": "POST"}, "action": {"return": 200}}, 'routes',
+        {
+            "match": {"method": "POST"},
+            "action": {"pass": "applications/empty"},
+        },
+        'routes',
     ), 'routes edit configure 6'
 
     assert client.get()['status'] == 404, 'routes edit GET 6'
@@ -660,8 +699,8 @@ def test_routes_edit():
     assert 'success' in client.conf(
         {
             "listeners": {"*:8080": {"pass": "routes/main"}},
-            "routes": {"main": [{"action": {"return": 200}}]},
-            "applications": {},
+            "routes": {"main": [{"action": {"pass": "applications/empty"}}]},
+            "applications": {"empty": empty_application()},
         }
     ), 'route edit configure 7'
 

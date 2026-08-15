@@ -40,7 +40,9 @@ def test_status_requests(skip_alert):
                 "*:8081": {"pass": "applications/empty"},
                 "*:8082": {"pass": "applications/blah"},
             },
-            "routes": [{"action": {"return": 200}}],
+            "routes": [
+                {"action": {"pass": "applications/empty"}},
+            ],
             "applications": {
                 "empty": app_default(),
                 "blah": {
@@ -97,8 +99,11 @@ def test_status_connections():
                 "*:8080": {"pass": "routes"},
                 "*:8081": {"pass": "applications/delayed"},
             },
-            "routes": [{"action": {"return": 200}}],
+            "routes": [
+                {"action": {"pass": "applications/empty"}},
+            ],
             "applications": {
+                "empty": app_default(),
                 "delayed": app_default("delayed"),
             },
         },
