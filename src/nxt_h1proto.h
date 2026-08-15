@@ -23,8 +23,6 @@ struct nxt_h1proto_s {
     uint8_t                   chunked;              /* 1 bit  */
     nxt_http_te_t             transfer_encoding:8;  /* 2 bits */
 
-    uint32_t                  header_size;
-
     nxt_http_request_t        *request;
     nxt_buf_t                 *buffers;
 

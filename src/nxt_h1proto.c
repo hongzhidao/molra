@@ -38,8 +38,6 @@ static void nxt_h1p_request_send(nxt_task_t *task, nxt_http_request_t *r,
     nxt_buf_t *out);
 static nxt_buf_t *nxt_h1p_chunk_create(nxt_task_t *task, nxt_http_request_t *r,
     nxt_buf_t *out);
-static nxt_off_t nxt_h1p_request_body_bytes_sent(nxt_task_t *task,
-    nxt_http_proto_t proto);
 static void nxt_h1p_request_discard(nxt_task_t *task, nxt_http_request_t *r,
     nxt_buf_t *last);
 static void nxt_h1p_conn_request_error(nxt_task_t *task, void *obj, void *data);
@@ -89,7 +87,6 @@ const nxt_http_proto_table_t  nxt_http_proto[3] = {
         .local_addr       = nxt_h1p_request_local_addr,
         .header_send      = nxt_h1p_request_header_send,
         .send             = nxt_h1p_request_send,
-        .body_bytes_sent  = nxt_h1p_request_body_bytes_sent,
         .discard          = nxt_h1p_request_discard,
         .close            = nxt_h1p_request_close,
     },
@@ -107,10 +104,6 @@ static nxt_http_field_proc_t           nxt_h1p_fields[] = {
     { nxt_string("Host"),              &nxt_http_request_host, 0 },
     { nxt_string("Cookie"),            &nxt_http_request_field,
         offsetof(nxt_http_request_t, cookie) },
-    { nxt_string("Referer"),           &nxt_http_request_field,
-        offsetof(nxt_http_request_t, referer) },
-    { nxt_string("User-Agent"),        &nxt_http_request_field,
-        offsetof(nxt_http_request_t, user_agent) },
     { nxt_string("Content-Type"),      &nxt_http_request_field,
         offsetof(nxt_http_request_t, content_type) },
     { nxt_string("Content-Length"),    &nxt_http_request_content_length, 0 },
@@ -997,8 +990,6 @@ nxt_h1p_request_header_send(nxt_task_t *task, nxt_http_request_t *r,
 
     header->mem.free = p;
 
-    h1p->header_size = nxt_buf_mem_used_size(&header->mem);
-
     c = h1p->conn;
 
     c->write = header;
@@ -1169,20 +1160,6 @@ nxt_h1p_chunk_create(nxt_task_t *task, nxt_http_request_t *r, nxt_buf_t *out)
     header->mem.free = nxt_sprintf(header->mem.free, header->mem.end,
                                    "\r\n%xO\r\n", size);
     return header;
-}
-
-
-static nxt_off_t
-nxt_h1p_request_body_bytes_sent(nxt_task_t *task, nxt_http_proto_t proto)
-{
-    nxt_off_t      sent;
-    nxt_h1proto_t  *h1p;
-
-    h1p = proto.h1;
-
-    sent = h1p->conn->sent - h1p->header_size;
-
-    return (sent > 0) ? sent : 0;
 }
 
 
@@ -1429,8 +1406,6 @@ nxt_h1p_keepalive(nxt_task_t *task, nxt_h1proto_t *h1p, nxt_conn_t *c)
     in = c->read;
 
     nxt_memzero(h1p, offsetof(nxt_h1proto_t, conn));
-
-    c->sent = 0;
 
     engine = task->thread->engine;
 

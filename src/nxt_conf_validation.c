@@ -145,9 +145,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_root_members[] = {
         .type       = NXT_CONF_VLDT_OBJECT,
         .validator  = nxt_conf_vldt_object_iterator,
         .u.object   = nxt_conf_vldt_app,
-    }, {
-        .name       = nxt_string("access_log"),
-        .type       = NXT_CONF_VLDT_STRING,
     },
 
     NXT_CONF_VLDT_END

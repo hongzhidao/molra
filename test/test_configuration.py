@@ -227,6 +227,12 @@ def test_routes_unsupported():
     assert 'error' in client.conf([], 'routes'), 'routes unsupported'
 
 
+def test_access_log_unsupported():
+    assert 'error' in client.conf('/tmp/access.log', 'access_log'), (
+        'access log unsupported'
+    )
+
+
 def test_listeners_forward_invalid():
     def check_error(option):
         assert 'error' in client.conf(

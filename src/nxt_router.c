@@ -242,7 +242,6 @@ static const nxt_port_handlers_t  nxt_router_process_port_handlers = {
     .app_restart  = nxt_router_app_restart_handler,
     .status       = nxt_router_status_handler,
     .remove_pid   = nxt_router_remove_pid_handler,
-    .access_log   = nxt_router_access_log_reopen_handler,
     .rpc_ready    = nxt_port_rpc_handler,
     .rpc_error    = nxt_port_rpc_handler,
     .oosm         = nxt_router_oosm_handler,
@@ -1111,11 +1110,6 @@ nxt_router_conf_apply(nxt_task_t *task, void *obj, void *data)
 
     } nxt_queue_loop;
 
-    if (rtcf->access_log != NULL && rtcf->access_log->fd == -1) {
-        nxt_router_access_log_open(task, tmcf);
-        return;
-    }
-
     rt = task->thread->runtime;
 
     interface = nxt_service_get(rt->services, "engine", NULL);
@@ -1140,14 +1134,6 @@ nxt_router_conf_apply(nxt_task_t *task, void *obj, void *data)
 
     nxt_queue_add(&router->sockets, &updating_sockets);
     nxt_queue_add(&router->sockets, &creating_sockets);
-
-    if (router->access_log != rtcf->access_log) {
-        nxt_router_access_log_use(&router->lock, rtcf->access_log);
-
-        nxt_router_access_log_release(task, &router->lock, router->access_log);
-
-        router->access_log = rtcf->access_log;
-    }
 
     nxt_router_conf_ready(task, tmcf);
 
@@ -1202,8 +1188,6 @@ nxt_router_conf_ready(nxt_task_t *task, nxt_router_temp_conf_t *tmcf)
     if (count == 0) {
         nxt_router_apps_hash_use(task, rtcf, -1);
 
-        nxt_router_access_log_release(task, lock, rtcf->access_log);
-
         nxt_mp_destroy(rtcf->mem_pool);
     }
 
@@ -1253,8 +1237,6 @@ nxt_router_conf_error(nxt_task_t *task, nxt_router_temp_conf_t *tmcf)
     nxt_queue_add(&router->apps, &tmcf->previous);
 
     // TODO: new engines and threads
-
-    nxt_router_access_log_release(task, &router->lock, rtcf->access_log);
 
     nxt_mp_destroy(rtcf->mem_pool);
 
@@ -1448,7 +1430,7 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     nxt_port_t                  *port;
     nxt_router_t                *router;
     nxt_app_joint_t             *app_joint;
-    nxt_conf_value_t            *root, *http, *value;
+    nxt_conf_value_t            *root, *http;
     nxt_conf_value_t            *applications, *application;
     nxt_conf_value_t            *listeners, *listener;
     nxt_socket_conf_t           *skcf;
@@ -1461,7 +1443,6 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     static nxt_str_t  http_path = nxt_string("/settings/http");
     static nxt_str_t  applications_path = nxt_string("/applications");
     static nxt_str_t  listeners_path = nxt_string("/listeners");
-    static nxt_str_t  access_log_path = nxt_string("/access_log");
 
     root = nxt_conf_json_parse(tmcf->mem_pool, start, end, NULL);
     if (root == NULL) {
@@ -1802,15 +1783,6 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
             if (nxt_slow_path(skcf->action == NULL)) {
                 goto fail;
             }
-        }
-    }
-
-    value = nxt_conf_get_path(root, &access_log_path);
-
-    if (value != NULL) {
-        ret = nxt_router_access_log_create(task, rtcf, value);
-        if (nxt_slow_path(ret != NXT_OK)) {
-            goto fail;
         }
     }
 
@@ -3256,8 +3228,6 @@ nxt_router_conf_release(nxt_task_t *task, nxt_socket_conf_joint_t *joint)
         nxt_debug(task, "old router conf is destroyed");
 
         nxt_router_apps_hash_use(task, rtcf, -1);
-
-        nxt_router_access_log_release(task, lock, rtcf->access_log);
 
         nxt_mp_thread_adopt(rtcf->mem_pool);
 
