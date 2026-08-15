@@ -44,9 +44,6 @@ struct nxt_port_handlers_s {
     nxt_port_handler_t  req_headers_ack;
     nxt_port_handler_t  req_body;
 
-    /* Websocket frame. */
-    nxt_port_handler_t  websocket_frame;
-
     /* Various data. */
     nxt_port_handler_t  data;
     nxt_port_handler_t  app_restart;
@@ -99,8 +96,6 @@ typedef enum {
     _NXT_PORT_MSG_REQ_HEADERS     = nxt_port_handler_idx(req_headers),
     _NXT_PORT_MSG_REQ_HEADERS_ACK = nxt_port_handler_idx(req_headers_ack),
     _NXT_PORT_MSG_REQ_BODY        = nxt_port_handler_idx(req_body),
-    _NXT_PORT_MSG_WEBSOCKET       = nxt_port_handler_idx(websocket_frame),
-
     _NXT_PORT_MSG_DATA            = nxt_port_handler_idx(data),
     _NXT_PORT_MSG_APP_RESTART     = nxt_port_handler_idx(app_restart),
     _NXT_PORT_MSG_STATUS          = nxt_port_handler_idx(status),
@@ -137,9 +132,6 @@ typedef enum {
 
     NXT_PORT_MSG_REQ_HEADERS      = _NXT_PORT_MSG_REQ_HEADERS,
     NXT_PORT_MSG_REQ_BODY         = _NXT_PORT_MSG_REQ_BODY,
-    NXT_PORT_MSG_WEBSOCKET        = _NXT_PORT_MSG_WEBSOCKET,
-    NXT_PORT_MSG_WEBSOCKET_LAST   = nxt_msg_last(_NXT_PORT_MSG_WEBSOCKET),
-
     NXT_PORT_MSG_DATA             = _NXT_PORT_MSG_DATA,
     NXT_PORT_MSG_DATA_LAST        = nxt_msg_last(_NXT_PORT_MSG_DATA),
     NXT_PORT_MSG_APP_RESTART      = nxt_msg_last(_NXT_PORT_MSG_APP_RESTART),
@@ -239,7 +231,6 @@ struct nxt_port_s {
     /* Maximum interleave of message parts. */
     uint32_t            max_share;
 
-    uint32_t            active_websockets;
     uint32_t            active_requests;
 
     nxt_port_handler_t  handler;

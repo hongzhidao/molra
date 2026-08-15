@@ -288,6 +288,13 @@ def test_settings_max_body_size():
     assert client.post(body='01234')['status'] == 200, 'status size'
     assert client.post(body='012345')['status'] == 413, 'status size max'
 
+def test_settings_websocket_unsupported():
+    client.load('empty')
+
+    assert 'error' in client.conf(
+        {'http': {'websocket': {'read_timeout': 5}}}, 'settings'
+    ), 'websocket setting'
+
 def test_settings_max_body_size_large():
     client.load('mirror')
 

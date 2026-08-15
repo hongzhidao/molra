@@ -12,9 +12,6 @@
 #include "nxt_unit.h"
 #include "nxt_unit_request.h"
 #include "nxt_unit_response.h"
-#include "nxt_unit_websocket.h"
-
-#include "nxt_websocket.h"
 
 #if (NXT_HAVE_MEMFD_CREATE)
 #include <linux/memfd.h>
@@ -39,7 +36,6 @@ typedef struct nxt_unit_read_buf_s              nxt_unit_read_buf_t;
 typedef struct nxt_unit_ctx_impl_s              nxt_unit_ctx_impl_t;
 typedef struct nxt_unit_port_impl_s             nxt_unit_port_impl_t;
 typedef struct nxt_unit_request_info_impl_s     nxt_unit_request_info_impl_t;
-typedef struct nxt_unit_websocket_frame_impl_s  nxt_unit_websocket_frame_impl_t;
 
 static nxt_unit_impl_t *nxt_unit_create(nxt_unit_init_t *init);
 static int nxt_unit_ctx_init(nxt_unit_impl_t *lib,
@@ -71,18 +67,11 @@ static int nxt_unit_process_req_body(nxt_unit_ctx_t *ctx,
 static int nxt_unit_request_check_response_port(nxt_unit_request_info_t *req,
     nxt_unit_port_id_t *port_id);
 static int nxt_unit_send_req_headers_ack(nxt_unit_request_info_t *req);
-static int nxt_unit_process_websocket(nxt_unit_ctx_t *ctx,
-    nxt_unit_recv_msg_t *recv_msg);
 static int nxt_unit_process_shm_ack(nxt_unit_ctx_t *ctx);
 static nxt_unit_request_info_impl_t *nxt_unit_request_info_get(
     nxt_unit_ctx_t *ctx);
 static void nxt_unit_request_info_release(nxt_unit_request_info_t *req);
 static void nxt_unit_request_info_free(nxt_unit_request_info_impl_t *req);
-static nxt_unit_websocket_frame_impl_t *nxt_unit_websocket_frame_get(
-    nxt_unit_ctx_t *ctx);
-static void nxt_unit_websocket_frame_release(nxt_unit_websocket_frame_t *ws);
-static void nxt_unit_websocket_frame_free(nxt_unit_ctx_t *ctx,
-    nxt_unit_websocket_frame_impl_t *ws);
 static nxt_unit_mmap_buf_t *nxt_unit_mmap_buf_get(nxt_unit_ctx_t *ctx);
 static void nxt_unit_mmap_buf_release(nxt_unit_mmap_buf_t *mmap_buf);
 static int nxt_unit_mmap_buf_send(nxt_unit_request_info_t *req,
@@ -250,7 +239,6 @@ struct nxt_unit_request_info_impl_s {
     nxt_unit_mmap_buf_t      *incoming_buf;
 
     nxt_unit_req_state_t     state;
-    uint8_t                  websocket;
     uint8_t                  in_hash;
 
     /*  for nxt_unit_ctx_impl_t.free_req or active_req */
@@ -259,17 +247,6 @@ struct nxt_unit_request_info_impl_s {
     nxt_queue_link_t         port_wait_link;
 
     char                     extra_data[];
-};
-
-
-struct nxt_unit_websocket_frame_impl_s {
-    nxt_unit_websocket_frame_t  ws;
-
-    nxt_unit_mmap_buf_t         *buf;
-
-    nxt_queue_link_t            link;
-
-    nxt_unit_ctx_impl_t         *ctx_impl;
 };
 
 
@@ -298,9 +275,6 @@ struct nxt_unit_ctx_impl_s {
 
     /*  of nxt_unit_request_info_impl_t */
     nxt_queue_t                   free_req;
-
-    /*  of nxt_unit_websocket_frame_impl_t */
-    nxt_queue_t                   free_ws;
 
     /*  of nxt_unit_request_info_impl_t */
     nxt_queue_t                   active_req;
@@ -650,7 +624,6 @@ nxt_unit_ctx_init(nxt_unit_impl_t *lib, nxt_unit_ctx_impl_t *ctx_impl,
     ctx_impl->quit_param = NXT_QUIT_GRACEFUL;
 
     nxt_queue_init(&ctx_impl->free_req);
-    nxt_queue_init(&ctx_impl->free_ws);
     nxt_queue_init(&ctx_impl->active_req);
     nxt_queue_init(&ctx_impl->ready_req);
     nxt_queue_init(&ctx_impl->pending_rbuf);
@@ -1069,10 +1042,6 @@ nxt_unit_process_msg(nxt_unit_ctx_t *ctx, nxt_unit_read_buf_t *rbuf,
         rc = nxt_unit_process_req_body(ctx, &recv_msg);
         break;
 
-    case _NXT_PORT_MSG_WEBSOCKET:
-        rc = nxt_unit_process_websocket(ctx, &recv_msg);
-        break;
-
     case _NXT_PORT_MSG_REMOVE_PID:
         if (nxt_slow_path(recv_msg.size != sizeof(pid))) {
             nxt_unit_alert(ctx, "#%"PRIu32": remove_pid: invalid message size "
@@ -1325,7 +1294,6 @@ nxt_unit_process_req_headers(nxt_unit_ctx_t *ctx, nxt_unit_recv_msg_t *recv_msg,
 
     req->response_max_fields = 0;
     req_impl->state = NXT_UNIT_RS_START;
-    req_impl->websocket = 0;
     req_impl->in_hash = 0;
 
     nxt_unit_debug(ctx, "#%"PRIu32": %.*s %.*s (%d)", recv_msg->stream,
@@ -1593,112 +1561,6 @@ nxt_unit_send_req_headers_ack(nxt_unit_request_info_t *req)
 
 
 static int
-nxt_unit_process_websocket(nxt_unit_ctx_t *ctx, nxt_unit_recv_msg_t *recv_msg)
-{
-    size_t                           hsize;
-    nxt_unit_impl_t                  *lib;
-    nxt_unit_mmap_buf_t              *b;
-    nxt_unit_callbacks_t             *cb;
-    nxt_unit_request_info_t          *req;
-    nxt_unit_request_info_impl_t     *req_impl;
-    nxt_unit_websocket_frame_impl_t  *ws_impl;
-
-    req = nxt_unit_request_hash_find(ctx, recv_msg->stream, recv_msg->last);
-    if (nxt_slow_path(req == NULL)) {
-        return NXT_UNIT_OK;
-    }
-
-    req_impl = nxt_container_of(req, nxt_unit_request_info_impl_t, req);
-
-    lib = nxt_container_of(ctx->unit, nxt_unit_impl_t, unit);
-    cb = &lib->callbacks;
-
-    if (cb->websocket_handler && recv_msg->size >= 2) {
-        ws_impl = nxt_unit_websocket_frame_get(ctx);
-        if (nxt_slow_path(ws_impl == NULL)) {
-            nxt_unit_warn(ctx, "#%"PRIu32": websocket frame allocation failed",
-                          req_impl->stream);
-
-            return NXT_UNIT_ERROR;
-        }
-
-        ws_impl->ws.req = req;
-
-        ws_impl->buf = NULL;
-
-        if (recv_msg->mmap) {
-            for (b = recv_msg->incoming_buf; b != NULL; b = b->next) {
-                b->req = req;
-            }
-
-            /* "Move" incoming buffer list to ws_impl. */
-            ws_impl->buf = recv_msg->incoming_buf;
-            ws_impl->buf->prev = &ws_impl->buf;
-            recv_msg->incoming_buf = NULL;
-
-            b = ws_impl->buf;
-
-        } else {
-            b = nxt_unit_mmap_buf_get(ctx);
-            if (nxt_slow_path(b == NULL)) {
-                nxt_unit_alert(ctx, "#%"PRIu32": failed to allocate buf",
-                               req_impl->stream);
-
-                nxt_unit_websocket_frame_release(&ws_impl->ws);
-
-                return NXT_UNIT_ERROR;
-            }
-
-            b->req = req;
-            b->buf.start = recv_msg->start;
-            b->buf.free = b->buf.start;
-            b->buf.end = b->buf.start + recv_msg->size;
-
-            nxt_unit_mmap_buf_insert(&ws_impl->buf, b);
-        }
-
-        ws_impl->ws.header = (void *) b->buf.start;
-        ws_impl->ws.payload_len = nxt_websocket_frame_payload_len(
-            ws_impl->ws.header);
-
-        hsize = nxt_websocket_frame_header_size(ws_impl->ws.header);
-
-        if (ws_impl->ws.header->mask) {
-            ws_impl->ws.mask = (uint8_t *) b->buf.start + hsize - 4;
-
-        } else {
-            ws_impl->ws.mask = NULL;
-        }
-
-        b->buf.free += hsize;
-
-        ws_impl->ws.content_buf = &b->buf;
-        ws_impl->ws.content_length = ws_impl->ws.payload_len;
-
-        nxt_unit_req_debug(req, "websocket_handler: opcode=%d, "
-                           "payload_len=%"PRIu64,
-                            ws_impl->ws.header->opcode,
-                            ws_impl->ws.payload_len);
-
-        cb->websocket_handler(&ws_impl->ws);
-    }
-
-    if (recv_msg->last) {
-        if (cb->close_handler) {
-            nxt_unit_req_debug(req, "close_handler");
-
-            cb->close_handler(req);
-
-        } else {
-            nxt_unit_request_done(req, NXT_UNIT_ERROR);
-        }
-    }
-
-    return NXT_UNIT_OK;
-}
-
-
-static int
 nxt_unit_process_shm_ack(nxt_unit_ctx_t *ctx)
 {
     nxt_unit_impl_t       *lib;
@@ -1826,71 +1688,6 @@ nxt_unit_request_info_free(nxt_unit_request_info_impl_t *req_impl)
     if (req_impl != &ctx_impl->req) {
         nxt_unit_free(&ctx_impl->ctx, req_impl);
     }
-}
-
-
-static nxt_unit_websocket_frame_impl_t *
-nxt_unit_websocket_frame_get(nxt_unit_ctx_t *ctx)
-{
-    nxt_queue_link_t                 *lnk;
-    nxt_unit_ctx_impl_t              *ctx_impl;
-    nxt_unit_websocket_frame_impl_t  *ws_impl;
-
-    ctx_impl = nxt_container_of(ctx, nxt_unit_ctx_impl_t, ctx);
-
-    pthread_mutex_lock(&ctx_impl->mutex);
-
-    if (nxt_queue_is_empty(&ctx_impl->free_ws)) {
-        pthread_mutex_unlock(&ctx_impl->mutex);
-
-        ws_impl = nxt_unit_malloc(ctx, sizeof(nxt_unit_websocket_frame_impl_t));
-        if (nxt_slow_path(ws_impl == NULL)) {
-            return NULL;
-        }
-
-    } else {
-        lnk = nxt_queue_first(&ctx_impl->free_ws);
-        nxt_queue_remove(lnk);
-
-        pthread_mutex_unlock(&ctx_impl->mutex);
-
-        ws_impl = nxt_container_of(lnk, nxt_unit_websocket_frame_impl_t, link);
-    }
-
-    ws_impl->ctx_impl = ctx_impl;
-
-    return ws_impl;
-}
-
-
-static void
-nxt_unit_websocket_frame_release(nxt_unit_websocket_frame_t *ws)
-{
-    nxt_unit_websocket_frame_impl_t  *ws_impl;
-
-    ws_impl = nxt_container_of(ws, nxt_unit_websocket_frame_impl_t, ws);
-
-    while (ws_impl->buf != NULL) {
-        nxt_unit_mmap_buf_free(ws_impl->buf);
-    }
-
-    ws->req = NULL;
-
-    pthread_mutex_lock(&ws_impl->ctx_impl->mutex);
-
-    nxt_queue_insert_tail(&ws_impl->ctx_impl->free_ws, &ws_impl->link);
-
-    pthread_mutex_unlock(&ws_impl->ctx_impl->mutex);
-}
-
-
-static void
-nxt_unit_websocket_frame_free(nxt_unit_ctx_t *ctx,
-    nxt_unit_websocket_frame_impl_t *ws_impl)
-{
-    nxt_queue_remove(&ws_impl->link);
-
-    nxt_unit_free(ctx, ws_impl);
 }
 
 
@@ -2338,10 +2135,6 @@ nxt_unit_response_send(nxt_unit_request_info_t *req)
         return NXT_UNIT_ERROR;
     }
 
-    if (req->request->websocket_handshake && req->response->status == 101) {
-        nxt_unit_response_upgrade(req);
-    }
-
     nxt_unit_req_debug(req, "send: %"PRIu32" fields, %d bytes",
                        req->response->fields_count,
                        (int) (req->response_buf->free
@@ -2462,65 +2255,6 @@ nxt_unit_mmap_buf_release(nxt_unit_mmap_buf_t *mmap_buf)
     nxt_unit_mmap_buf_insert(&mmap_buf->ctx_impl->free_buf, mmap_buf);
 
     pthread_mutex_unlock(&mmap_buf->ctx_impl->mutex);
-}
-
-
-int
-nxt_unit_request_is_websocket_handshake(nxt_unit_request_info_t *req)
-{
-    return req->request->websocket_handshake;
-}
-
-
-int
-nxt_unit_response_upgrade(nxt_unit_request_info_t *req)
-{
-    int                           rc;
-    nxt_unit_request_info_impl_t  *req_impl;
-
-    req_impl = nxt_container_of(req, nxt_unit_request_info_impl_t, req);
-
-    if (nxt_slow_path(req_impl->websocket != 0)) {
-        nxt_unit_req_debug(req, "upgrade: already upgraded");
-
-        return NXT_UNIT_OK;
-    }
-
-    if (nxt_slow_path(req_impl->state < NXT_UNIT_RS_RESPONSE_INIT)) {
-        nxt_unit_req_warn(req, "upgrade: response is not initialized yet");
-
-        return NXT_UNIT_ERROR;
-    }
-
-    if (nxt_slow_path(req_impl->state >= NXT_UNIT_RS_RESPONSE_SENT)) {
-        nxt_unit_req_warn(req, "upgrade: response already sent");
-
-        return NXT_UNIT_ERROR;
-    }
-
-    rc = nxt_unit_request_hash_add(req->ctx, req);
-    if (nxt_slow_path(rc != NXT_UNIT_OK)) {
-        nxt_unit_req_warn(req, "upgrade: failed to add request to hash");
-
-        return NXT_UNIT_ERROR;
-    }
-
-    req_impl->websocket = 1;
-
-    req->response->status = 101;
-
-    return NXT_UNIT_OK;
-}
-
-
-int
-nxt_unit_response_is_websocket(nxt_unit_request_info_t *req)
-{
-    nxt_unit_request_info_impl_t  *req_impl;
-
-    req_impl = nxt_container_of(req, nxt_unit_request_info_impl_t, req);
-
-    return req_impl->websocket;
 }
 
 
@@ -3291,177 +3025,6 @@ skip_response_send:
                               &msg, sizeof(msg), NULL);
 
     nxt_unit_request_info_release(req);
-}
-
-
-int
-nxt_unit_websocket_send(nxt_unit_request_info_t *req, uint8_t opcode,
-    uint8_t last, const void *start, size_t size)
-{
-    const struct iovec  iov = { (void *) start, size };
-
-    return nxt_unit_websocket_sendv(req, opcode, last, &iov, 1);
-}
-
-
-int
-nxt_unit_websocket_sendv(nxt_unit_request_info_t *req, uint8_t opcode,
-    uint8_t last, const struct iovec *iov, int iovcnt)
-{
-    int                     i, rc;
-    size_t                  l, copy;
-    uint32_t                payload_len, buf_size, alloc_size;
-    const uint8_t           *b;
-    nxt_unit_buf_t          *buf;
-    nxt_unit_mmap_buf_t     mmap_buf;
-    nxt_websocket_header_t  *wh;
-    char                    local_buf[NXT_UNIT_LOCAL_BUF_SIZE];
-
-    payload_len = 0;
-
-    for (i = 0; i < iovcnt; i++) {
-        payload_len += iov[i].iov_len;
-    }
-
-    buf_size = 10 + payload_len;
-    alloc_size = nxt_min(buf_size, PORT_MMAP_DATA_SIZE);
-
-    rc = nxt_unit_get_outgoing_buf(req->ctx, req->response_port,
-                                   alloc_size, alloc_size,
-                                   &mmap_buf, local_buf);
-    if (nxt_slow_path(rc != NXT_UNIT_OK)) {
-        return rc;
-    }
-
-    buf = &mmap_buf.buf;
-
-    buf->start[0] = 0;
-    buf->start[1] = 0;
-
-    buf_size -= buf->end - buf->start;
-
-    wh = (void *) buf->free;
-
-    buf->free = nxt_websocket_frame_init(wh, payload_len);
-    wh->fin = last;
-    wh->opcode = opcode;
-
-    for (i = 0; i < iovcnt; i++) {
-        b = iov[i].iov_base;
-        l = iov[i].iov_len;
-
-        while (l > 0) {
-            copy = buf->end - buf->free;
-            copy = nxt_min(l, copy);
-
-            buf->free = nxt_cpymem(buf->free, b, copy);
-            b += copy;
-            l -= copy;
-
-            if (l > 0) {
-                if (nxt_fast_path(buf->free > buf->start)) {
-                    rc = nxt_unit_mmap_buf_send(req, &mmap_buf, 0);
-
-                    if (nxt_slow_path(rc != NXT_UNIT_OK)) {
-                        return rc;
-                    }
-                }
-
-                alloc_size = nxt_min(buf_size, PORT_MMAP_DATA_SIZE);
-
-                rc = nxt_unit_get_outgoing_buf(req->ctx, req->response_port,
-                                               alloc_size, alloc_size,
-                                               &mmap_buf, local_buf);
-                if (nxt_slow_path(rc != NXT_UNIT_OK)) {
-                    return rc;
-                }
-
-                buf_size -= buf->end - buf->start;
-            }
-        }
-    }
-
-    if (buf->free > buf->start) {
-        rc = nxt_unit_mmap_buf_send(req, &mmap_buf, 0);
-    }
-
-    return rc;
-}
-
-
-ssize_t
-nxt_unit_websocket_read(nxt_unit_websocket_frame_t *ws, void *dst,
-    size_t size)
-{
-    ssize_t   res;
-    uint8_t   *b;
-    uint64_t  i, d;
-
-    res = nxt_unit_buf_read(&ws->content_buf, &ws->content_length,
-                            dst, size);
-
-    if (ws->mask == NULL) {
-        return res;
-    }
-
-    b = dst;
-    d = (ws->payload_len - ws->content_length - res) % 4;
-
-    for (i = 0; i < (uint64_t) res; i++) {
-        b[i] ^= ws->mask[ (i + d) % 4 ];
-    }
-
-    return res;
-}
-
-
-int
-nxt_unit_websocket_retain(nxt_unit_websocket_frame_t *ws)
-{
-    char                             *b;
-    size_t                           size, hsize;
-    nxt_unit_websocket_frame_impl_t  *ws_impl;
-
-    ws_impl = nxt_container_of(ws, nxt_unit_websocket_frame_impl_t, ws);
-
-    if (ws_impl->buf->free_ptr != NULL || ws_impl->buf->hdr != NULL) {
-        return NXT_UNIT_OK;
-    }
-
-    size = ws_impl->buf->buf.end - ws_impl->buf->buf.start;
-
-    b = nxt_unit_malloc(ws->req->ctx, size);
-    if (nxt_slow_path(b == NULL)) {
-        return NXT_UNIT_ERROR;
-    }
-
-    memcpy(b, ws_impl->buf->buf.start, size);
-
-    hsize = nxt_websocket_frame_header_size(b);
-
-    ws_impl->buf->buf.start = b;
-    ws_impl->buf->buf.free = b + hsize;
-    ws_impl->buf->buf.end = b + size;
-
-    ws_impl->buf->free_ptr = b;
-
-    ws_impl->ws.header = (nxt_websocket_header_t *) b;
-
-    if (ws_impl->ws.header->mask) {
-        ws_impl->ws.mask = (uint8_t *) b + hsize - 4;
-
-    } else {
-        ws_impl->ws.mask = NULL;
-    }
-
-    return NXT_UNIT_OK;
-}
-
-
-void
-nxt_unit_websocket_done(nxt_unit_websocket_frame_t *ws)
-{
-    nxt_unit_websocket_frame_release(ws);
 }
 
 
@@ -5167,7 +4730,6 @@ nxt_unit_ctx_free(nxt_unit_ctx_impl_t *ctx_impl)
     nxt_unit_mmap_buf_t              *mmap_buf;
     nxt_unit_read_buf_t              *rbuf;
     nxt_unit_request_info_impl_t     *req_impl;
-    nxt_unit_websocket_frame_impl_t  *ws_impl;
 
     lib = nxt_container_of(ctx_impl->ctx.unit, nxt_unit_impl_t, unit);
 
@@ -5193,13 +4755,6 @@ nxt_unit_ctx_free(nxt_unit_ctx_impl_t *ctx_impl)
                    nxt_unit_request_info_impl_t, link)
     {
         nxt_unit_request_info_free(req_impl);
-
-    } nxt_queue_loop;
-
-    nxt_queue_each(ws_impl, &ctx_impl->free_ws,
-                   nxt_unit_websocket_frame_impl_t, link)
-    {
-        nxt_unit_websocket_frame_free(&ctx_impl->ctx, ws_impl);
 
     } nxt_queue_loop;
 

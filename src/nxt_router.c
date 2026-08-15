@@ -216,8 +216,6 @@ static void nxt_router_get_port_handler(nxt_task_t *task,
 static void nxt_router_get_mmap_handler(nxt_task_t *task,
     nxt_port_recv_msg_t *msg);
 
-extern const nxt_http_request_state_t  nxt_http_websocket;
-
 nxt_router_t  *nxt_router;
 
 static const nxt_str_t http_prefix = nxt_string("HTTP_");
@@ -1434,28 +1432,6 @@ static nxt_conf_map_t  nxt_router_http_conf[] = {
 };
 
 
-static nxt_conf_map_t  nxt_router_websocket_conf[] = {
-    {
-        nxt_string("max_frame_size"),
-        NXT_CONF_MAP_SIZE,
-        offsetof(nxt_websocket_conf_t, max_frame_size),
-    },
-
-    {
-        nxt_string("read_timeout"),
-        NXT_CONF_MAP_MSEC,
-        offsetof(nxt_websocket_conf_t, read_timeout),
-    },
-
-    {
-        nxt_string("keepalive_interval"),
-        NXT_CONF_MAP_MSEC,
-        offsetof(nxt_websocket_conf_t, keepalive_interval),
-    },
-
-};
-
-
 static nxt_int_t
 nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     u_char *start, u_char *end)
@@ -1472,7 +1448,7 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     nxt_port_t                  *port;
     nxt_router_t                *router;
     nxt_app_joint_t             *app_joint;
-    nxt_conf_value_t            *root, *conf, *http, *value, *websocket;
+    nxt_conf_value_t            *root, *conf, *http, *value;
     nxt_conf_value_t            *applications, *application;
     nxt_conf_value_t            *listeners, *listener;
     nxt_socket_conf_t           *skcf;
@@ -1488,7 +1464,6 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     static nxt_str_t  listeners_path = nxt_string("/listeners");
     static nxt_str_t  routes_path = nxt_string("/routes");
     static nxt_str_t  access_log_path = nxt_string("/access_log");
-    static nxt_str_t  websocket_path = nxt_string("/settings/http/websocket");
 
     root = nxt_conf_json_parse(tmcf->mem_pool, start, end, NULL);
     if (root == NULL) {
@@ -1765,8 +1740,6 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
     }
 #endif
 
-    websocket = nxt_conf_get_path(root, &websocket_path);
-
     listeners = nxt_conf_get_path(root, &listeners_path);
 
     if (listeners != NULL) {
@@ -1806,10 +1779,6 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
             skcf->header_read_timeout = 30 * 1000;
             skcf->body_read_timeout = 30 * 1000;
             skcf->send_timeout = 30 * 1000;
-            skcf->websocket_conf.max_frame_size = 1024 * 1024;
-            skcf->websocket_conf.read_timeout = 60 * 1000;
-            skcf->websocket_conf.keepalive_interval = 30 * 1000;
-
             nxt_str_null(&skcf->body_temp_path);
 
             if (http != NULL) {
@@ -1818,17 +1787,6 @@ nxt_router_conf_create(nxt_task_t *task, nxt_router_temp_conf_t *tmcf,
                                           skcf);
                 if (ret != NXT_OK) {
                     nxt_alert(task, "http map error");
-                    goto fail;
-                }
-            }
-
-            if (websocket != NULL) {
-                ret = nxt_conf_map_object(mp, websocket,
-                                          nxt_router_websocket_conf,
-                                          nxt_nitems(nxt_router_websocket_conf),
-                                          &skcf->websocket_conf);
-                if (ret != NXT_OK) {
-                    nxt_alert(task, "websocket map error");
                     goto fail;
                 }
             }
@@ -3367,7 +3325,6 @@ nxt_router_response_ready_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg,
     nxt_int_t               ret;
     nxt_app_t               *app;
     nxt_buf_t               *b, *next;
-    nxt_port_t              *app_port;
     nxt_unit_field_t        *f;
     nxt_http_field_t        *field;
     nxt_http_request_t      *r;
@@ -3512,30 +3469,7 @@ nxt_router_response_ready_handler(nxt_task_t *task, nxt_port_recv_msg_t *msg,
 
         nxt_http_request_header_send(task, r, nxt_http_request_send_body, NULL);
 
-        if (r->websocket_handshake
-            && r->status == NXT_HTTP_SWITCHING_PROTOCOLS)
-        {
-            app_port = req_rpc_data->app_port;
-            if (nxt_slow_path(app_port == NULL)) {
-                goto fail;
-            }
-
-            nxt_thread_mutex_lock(&app->mutex);
-
-            app_port->main_app_port->active_websockets++;
-
-            nxt_thread_mutex_unlock(&app->mutex);
-
-            nxt_router_app_port_release(task, app, app_port, NXT_APR_UPGRADE);
-            req_rpc_data->apr_action = NXT_APR_CLOSE;
-
-            nxt_debug(task, "stream #%uD upgrade", req_rpc_data->stream);
-
-            r->state = &nxt_http_websocket;
-
-        } else {
-            r->state = &nxt_http_request_send_state;
-        }
+        r->state = &nxt_http_request_send_state;
     }
 
     return;
@@ -4049,9 +3983,6 @@ nxt_router_app_port_release(nxt_task_t *task, nxt_app_t *app, nxt_port_t *port,
         got_response = 1;
         inc_use = -1;
         break;
-    case NXT_APR_UPGRADE:
-        got_response = 1;
-        break;
     case NXT_APR_CLOSE:
         inc_use = -1;
         break;
@@ -4088,7 +4019,6 @@ nxt_router_app_port_release(nxt_task_t *task, nxt_app_t *app, nxt_port_t *port,
 
     if (main_app_port->pair[1] != -1
         && main_app_port->active_requests == 0
-        && main_app_port->active_websockets == 0
         && main_app_port->idle_link.next == NULL)
     {
         if (app->idle_processes == app->spare_processes
@@ -4829,8 +4759,6 @@ nxt_router_prepare_msg(nxt_task_t *task, nxt_http_request_t *r,
     *p++ = '\0';
 
     req->https = r->https;
-    req->websocket_handshake = r->websocket_handshake;
-
     req->server_name_length = r->server_name.length;
     nxt_unit_sptr_set(&req->server_name, p);
     p = nxt_cpymem(p, r->server_name.start, r->server_name.length);

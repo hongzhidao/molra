@@ -166,7 +166,6 @@ static nxt_int_t nxt_conf_vldt_clone_gidmap(nxt_conf_validation_t *vldt,
 
 static nxt_conf_vldt_object_t  nxt_conf_vldt_setting_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_http_members[];
-static nxt_conf_vldt_object_t  nxt_conf_vldt_websocket_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_match_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_python_target_members[];
 static nxt_conf_vldt_object_t  nxt_conf_vldt_php_common_members[];
@@ -248,28 +247,6 @@ static nxt_conf_vldt_object_t  nxt_conf_vldt_http_members[] = {
     }, {
         .name       = nxt_string("discard_unsafe_fields"),
         .type       = NXT_CONF_VLDT_BOOLEAN,
-    }, {
-        .name       = nxt_string("websocket"),
-        .type       = NXT_CONF_VLDT_OBJECT,
-        .validator  = nxt_conf_vldt_object,
-        .u.members  = nxt_conf_vldt_websocket_members,
-    },
-
-    NXT_CONF_VLDT_END
-};
-
-
-static nxt_conf_vldt_object_t  nxt_conf_vldt_websocket_members[] = {
-    {
-        .name       = nxt_string("read_timeout"),
-        .type       = NXT_CONF_VLDT_INTEGER,
-    }, {
-
-        .name       = nxt_string("keepalive_interval"),
-        .type       = NXT_CONF_VLDT_INTEGER,
-    }, {
-        .name       = nxt_string("max_frame_size"),
-        .type       = NXT_CONF_VLDT_INTEGER,
     },
 
     NXT_CONF_VLDT_END

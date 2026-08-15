@@ -7,8 +7,6 @@
 #include <nxt_router.h>
 #include <nxt_http.h>
 #include <nxt_h1proto.h>
-#include <nxt_websocket.h>
-#include <nxt_websocket_header.h>
 
 
 /*
@@ -22,17 +20,11 @@ static void nxt_h1p_conn_proto_init(nxt_task_t *task, void *obj, void *data);
 static void nxt_h1p_conn_request_init(nxt_task_t *task, void *obj, void *data);
 static void nxt_h1p_conn_request_header_parse(nxt_task_t *task, void *obj,
     void *data);
-static nxt_int_t nxt_h1p_header_process(nxt_task_t *task, nxt_h1proto_t *h1p,
+static nxt_int_t nxt_h1p_header_process(nxt_h1proto_t *h1p,
     nxt_http_request_t *r);
 static nxt_int_t nxt_h1p_header_buffer_test(nxt_task_t *task,
     nxt_h1proto_t *h1p, nxt_conn_t *c, nxt_socket_conf_t *skcf);
 static nxt_int_t nxt_h1p_connection(void *ctx, nxt_http_field_t *field,
-    uintptr_t data);
-static nxt_int_t nxt_h1p_upgrade(void *ctx, nxt_http_field_t *field,
-    uintptr_t data);
-static nxt_int_t nxt_h1p_websocket_key(void *ctx, nxt_http_field_t *field,
-    uintptr_t data);
-static nxt_int_t nxt_h1p_websocket_version(void *ctx, nxt_http_field_t *field,
     uintptr_t data);
 static nxt_int_t nxt_h1p_transfer_encoding(void *ctx, nxt_http_field_t *field,
     uintptr_t data);
@@ -77,7 +69,6 @@ static nxt_msec_t nxt_h1p_idle_response_timer_value(nxt_conn_t *c,
     uintptr_t data);
 static void nxt_h1p_shutdown(nxt_task_t *task, nxt_conn_t *c);
 static void nxt_h1p_closing(nxt_task_t *task, nxt_conn_t *c);
-static void nxt_h1p_conn_ws_shutdown(nxt_task_t *task, void *obj, void *data);
 static void nxt_h1p_conn_closing(nxt_task_t *task, void *obj, void *data);
 static void nxt_h1p_conn_free(nxt_task_t *task, void *obj, void *data);
 
@@ -101,8 +92,6 @@ const nxt_http_proto_table_t  nxt_http_proto[3] = {
         .body_bytes_sent  = nxt_h1p_request_body_bytes_sent,
         .discard          = nxt_h1p_request_discard,
         .close            = nxt_h1p_request_close,
-
-        .ws_frame_start   = nxt_h1p_websocket_frame_start,
     },
     /* NXT_HTTP_PROTO_H2      */
     /* NXT_HTTP_PROTO_DEVNULL */
@@ -113,10 +102,6 @@ static nxt_lvlhsh_t                    nxt_h1p_fields_hash;
 
 static nxt_http_field_proc_t           nxt_h1p_fields[] = {
     { nxt_string("Connection"),        &nxt_h1p_connection, 0 },
-    { nxt_string("Upgrade"),           &nxt_h1p_upgrade, 0 },
-    { nxt_string("Sec-WebSocket-Key"), &nxt_h1p_websocket_key, 0 },
-    { nxt_string("Sec-WebSocket-Version"),
-                                       &nxt_h1p_websocket_version, 0 },
     { nxt_string("Transfer-Encoding"), &nxt_h1p_transfer_encoding, 0 },
 
     { nxt_string("Host"),              &nxt_http_request_host, 0 },
@@ -363,7 +348,7 @@ nxt_h1p_conn_request_header_parse(nxt_task_t *task, void *obj, void *data)
          */
         h1p->keepalive = (h1p->parser.version.s.minor != '0');
 
-        ret = nxt_h1p_header_process(task, h1p, r);
+        ret = nxt_h1p_header_process(h1p, r);
 
         if (nxt_fast_path(ret == NXT_OK)) {
 
@@ -404,7 +389,7 @@ nxt_h1p_conn_request_header_parse(nxt_task_t *task, void *obj, void *data)
         break;
     }
 
-    (void) nxt_h1p_header_process(task, h1p, r);
+    (void) nxt_h1p_header_process(h1p, r);
 
 error:
 
@@ -415,10 +400,9 @@ error:
 
 
 static nxt_int_t
-nxt_h1p_header_process(nxt_task_t *task, nxt_h1proto_t *h1p,
+nxt_h1p_header_process(nxt_h1proto_t *h1p,
     nxt_http_request_t *r)
 {
-    u_char     *m;
     nxt_int_t  ret;
 
     r->target.start = h1p->parser.target_start;
@@ -440,42 +424,6 @@ nxt_h1p_header_process(nxt_task_t *task, nxt_h1proto_t *h1p,
     ret = nxt_http_fields_process(r->fields, &nxt_h1p_fields_hash, r);
     if (nxt_slow_path(ret != NXT_OK)) {
         return ret;
-    }
-
-    if (h1p->connection_upgrade && h1p->upgrade_websocket) {
-        m = h1p->parser.method.start;
-
-        if (nxt_slow_path(h1p->parser.method.length != 3
-                          || m[0] != 'G'
-                          || m[1] != 'E'
-                          || m[2] != 'T'))
-        {
-            nxt_log(task, NXT_LOG_INFO, "h1p upgrade: bad method");
-
-            return NXT_HTTP_BAD_REQUEST;
-        }
-
-        if (nxt_slow_path(h1p->parser.version.s.minor != '1')) {
-            nxt_log(task, NXT_LOG_INFO, "h1p upgrade: bad protocol version");
-
-            return NXT_HTTP_BAD_REQUEST;
-        }
-
-        if (nxt_slow_path(h1p->websocket_key == NULL)) {
-            nxt_log(task, NXT_LOG_INFO,
-                    "h1p upgrade: bad or absent websocket key");
-
-            return NXT_HTTP_BAD_REQUEST;
-        }
-
-        if (nxt_slow_path(h1p->websocket_version_ok == 0)) {
-            nxt_log(task, NXT_LOG_INFO,
-                    "h1p upgrade: bad or absent websocket version");
-
-            return NXT_HTTP_UPGRADE_REQUIRED;
-        }
-
-        r->websocket_handshake = 1;
     }
 
     return ret;
@@ -535,59 +483,6 @@ nxt_h1p_connection(void *ctx, nxt_http_field_t *field, uintptr_t data)
     {
         r->proto.h1->keepalive = 1;
 
-    } else if (field->value_length == 7
-               && nxt_memcasecmp(field->value, "upgrade", 7) == 0)
-    {
-        r->proto.h1->connection_upgrade = 1;
-    }
-
-    return NXT_OK;
-}
-
-
-static nxt_int_t
-nxt_h1p_upgrade(void *ctx, nxt_http_field_t *field, uintptr_t data)
-{
-    nxt_http_request_t  *r;
-
-    r = ctx;
-
-    if (field->value_length == 9
-        && nxt_memcasecmp(field->value, "websocket", 9) == 0)
-    {
-        r->proto.h1->upgrade_websocket = 1;
-    }
-
-    return NXT_OK;
-}
-
-
-static nxt_int_t
-nxt_h1p_websocket_key(void *ctx, nxt_http_field_t *field, uintptr_t data)
-{
-    nxt_http_request_t  *r;
-
-    r = ctx;
-
-    if (field->value_length == 24) {
-        r->proto.h1->websocket_key = field;
-    }
-
-    return NXT_OK;
-}
-
-
-static nxt_int_t
-nxt_h1p_websocket_version(void *ctx, nxt_http_field_t *field, uintptr_t data)
-{
-    nxt_http_request_t  *r;
-
-    r = ctx;
-
-    if (field->value_length == 2
-        && field->value[0] == '1' && field->value[1] == '3')
-    {
-        r->proto.h1->websocket_version_ok = 1;
     }
 
     return NXT_OK;
@@ -984,14 +879,9 @@ nxt_h1p_request_header_send(nxt_task_t *task, nxt_http_request_t *r,
     u_char              buf[UNKNOWN_STATUS_LENGTH];
 
     static const char   chunked[] = "Transfer-Encoding: chunked\r\n";
-    static const char   websocket_version[] = "Sec-WebSocket-Version: 13\r\n";
-
-    static const nxt_str_t  connection[3] = {
+    static const nxt_str_t  connection[2] = {
         nxt_string("Connection: close\r\n"),
         nxt_string("Connection: keep-alive\r\n"),
-        nxt_string("Upgrade: websocket\r\n"
-                   "Connection: Upgrade\r\n"
-                   "Sec-WebSocket-Accept: "),
     };
 
     nxt_debug(task, "h1p request header send");
@@ -1037,37 +927,28 @@ nxt_h1p_request_header_send(nxt_task_t *task, nxt_http_request_t *r,
 
     conn = -1;
 
-    if (r->websocket_handshake && n == NXT_HTTP_SWITCHING_PROTOCOLS) {
-        h1p->websocket = 1;
-        h1p->keepalive = 0;
-        conn = 2;
-        size += NXT_WEBSOCKET_ACCEPT_SIZE + 2;
+    http11 = nxt_h1p_is_http11(h1p);
 
-    } else {
-        http11 = nxt_h1p_is_http11(h1p);
+    if (r->resp.content_length == NULL || r->resp.content_length->skip) {
 
-        if (r->resp.content_length == NULL || r->resp.content_length->skip) {
-
-            if (http11) {
-                if (n != NXT_HTTP_NOT_MODIFIED
-                    && n != NXT_HTTP_NO_CONTENT
-                    && body_handler != NULL
-                    && !h1p->websocket)
-                {
-                    h1p->chunked = 1;
-                    size += nxt_length(chunked);
-                    /* Trailing CRLF will be added by the first chunk header. */
-                    size -= nxt_length("\r\n");
-                }
-
-            } else {
-                h1p->keepalive = 0;
+        if (http11) {
+            if (n != NXT_HTTP_NOT_MODIFIED
+                && n != NXT_HTTP_NO_CONTENT
+                && body_handler != NULL)
+            {
+                h1p->chunked = 1;
+                size += nxt_length(chunked);
+                /* Trailing CRLF will be added by the first chunk header. */
+                size -= nxt_length("\r\n");
             }
-        }
 
-        if (http11 ^ h1p->keepalive) {
-            conn = h1p->keepalive;
+        } else {
+            h1p->keepalive = 0;
         }
+    }
+
+    if (http11 ^ h1p->keepalive) {
+        conn = h1p->keepalive;
     }
 
     if (conn >= 0) {
@@ -1082,10 +963,6 @@ nxt_h1p_request_header_send(nxt_task_t *task, nxt_http_request_t *r,
         }
 
     } nxt_list_loop;
-
-    if (nxt_slow_path(n == NXT_HTTP_UPGRADE_REQUIRED)) {
-        size += nxt_length(websocket_version);
-    }
 
     header = nxt_http_buf_mem(task, r, size);
     if (nxt_slow_path(header == NULL)) {
@@ -1108,17 +985,6 @@ nxt_h1p_request_header_send(nxt_task_t *task, nxt_http_request_t *r,
 
     if (conn >= 0) {
         p = nxt_cpymem(p, connection[conn].start, connection[conn].length);
-    }
-
-    if (h1p->websocket) {
-        nxt_websocket_accept(p, h1p->websocket_key->value);
-        p += NXT_WEBSOCKET_ACCEPT_SIZE;
-
-        *p++ = '\r'; *p++ = '\n';
-    }
-
-    if (nxt_slow_path(n == NXT_HTTP_UPGRADE_REQUIRED)) {
-        p = nxt_cpymem(p, websocket_version, nxt_length(websocket_version));
     }
 
     if (h1p->chunked) {
@@ -1153,10 +1019,6 @@ nxt_h1p_request_header_send(nxt_task_t *task, nxt_http_request_t *r,
     }
 
     nxt_conn_write(task->thread->engine, c);
-
-    if (h1p->websocket) {
-        nxt_h1p_websocket_first_frame_start(task, r, c->read);
-    }
 }
 
 
@@ -1367,7 +1229,7 @@ nxt_h1p_conn_request_error(nxt_task_t *task, void *obj, void *data)
     }
 
     if (r->fields == NULL) {
-        (void) nxt_h1p_header_process(task, h1p, r);
+        (void) nxt_h1p_header_process(h1p, r);
     }
 
     if (r->status == 0) {
@@ -1403,7 +1265,7 @@ nxt_h1p_conn_request_timeout(nxt_task_t *task, void *obj, void *data)
     r = h1p->request;
 
     if (r->fields == NULL) {
-        (void) nxt_h1p_header_process(task, h1p, r);
+        (void) nxt_h1p_header_process(h1p, r);
     }
 
     nxt_http_request_error(task, r, NXT_HTTP_REQUEST_TIMEOUT);
@@ -1770,7 +1632,6 @@ nxt_h1p_idle_response_timer_value(nxt_conn_t *c, uintptr_t data)
 static void
 nxt_h1p_shutdown(nxt_task_t *task, nxt_conn_t *c)
 {
-    nxt_timer_t    *timer;
     nxt_h1proto_t  *h1p;
 
     nxt_debug(task, "h1p shutdown");
@@ -1779,38 +1640,9 @@ nxt_h1p_shutdown(nxt_task_t *task, nxt_conn_t *c)
 
     if (h1p != NULL) {
         nxt_h1p_complete_buffers(task, h1p, 1);
-
-        if (nxt_slow_path(h1p->websocket_timer != NULL)) {
-            timer = &h1p->websocket_timer->timer;
-
-            if (timer->handler != nxt_h1p_conn_ws_shutdown) {
-                timer->handler = nxt_h1p_conn_ws_shutdown;
-                nxt_timer_add(task->thread->engine, timer, 0);
-
-            } else {
-                nxt_debug(task, "h1p already scheduled ws shutdown");
-            }
-
-            return;
-        }
     }
 
     nxt_h1p_closing(task, c);
-}
-
-
-static void
-nxt_h1p_conn_ws_shutdown(nxt_task_t *task, void *obj, void *data)
-{
-    nxt_timer_t                *timer;
-    nxt_h1p_websocket_timer_t  *ws_timer;
-
-    nxt_debug(task, "h1p conn ws shutdown");
-
-    timer = obj;
-    ws_timer = nxt_timer_data(timer, nxt_h1p_websocket_timer_t, timer);
-
-    nxt_h1p_closing(task, ws_timer->h1p->conn);
 }
 
 

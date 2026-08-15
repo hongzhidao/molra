@@ -468,16 +468,6 @@ fail:
 
 
 void
-nxt_http_request_ws_frame_start(nxt_task_t *task, nxt_http_request_t *r,
-    nxt_buf_t *ws_frame)
-{
-    if (r->proto.any != NULL) {
-        nxt_http_proto[r->protocol].ws_frame_start(task, r, ws_frame);
-    }
-}
-
-
-void
 nxt_http_request_send(nxt_task_t *task, nxt_http_request_t *r, nxt_buf_t *out)
 {
     if (nxt_fast_path(r->proto.any != NULL)) {

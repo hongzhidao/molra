@@ -9,7 +9,6 @@
 
 #include <inttypes.h>
 #include <sys/types.h>
-#include <sys/uio.h>
 #include <string.h>
 
 #include "nxt_auto_config.h"
@@ -125,9 +124,6 @@ struct nxt_unit_callbacks_s {
     void     (*request_handler)(nxt_unit_request_info_t *req);
 
     void     (*data_handler)(nxt_unit_request_info_t *req);
-
-    /* Process websocket frame. */
-    void     (*websocket_handler)(nxt_unit_websocket_frame_t *ws);
 
     /* Connection closed. */
     void     (*close_handler)(nxt_unit_request_info_t *req);
@@ -281,12 +277,6 @@ int nxt_unit_response_is_sent(nxt_unit_request_info_t *req);
 nxt_unit_buf_t *nxt_unit_response_buf_alloc(nxt_unit_request_info_t *req,
     uint32_t size);
 
-int nxt_unit_request_is_websocket_handshake(nxt_unit_request_info_t *req);
-
-int nxt_unit_response_upgrade(nxt_unit_request_info_t *req);
-
-int nxt_unit_response_is_websocket(nxt_unit_request_info_t *req);
-
 nxt_unit_request_info_t *nxt_unit_get_request_info_from_data(void *data);
 
 int nxt_unit_buf_send(nxt_unit_buf_t *buf);
@@ -315,20 +305,6 @@ ssize_t nxt_unit_request_readline_size(nxt_unit_request_info_t *req,
     size_t max_size);
 
 void nxt_unit_request_done(nxt_unit_request_info_t *req, int rc);
-
-
-int nxt_unit_websocket_send(nxt_unit_request_info_t *req, uint8_t opcode,
-    uint8_t last, const void *start, size_t size);
-
-int nxt_unit_websocket_sendv(nxt_unit_request_info_t *req, uint8_t opcode,
-    uint8_t last, const struct iovec *iov, int iovcnt);
-
-ssize_t nxt_unit_websocket_read(nxt_unit_websocket_frame_t *ws, void *dst,
-    size_t size);
-
-int nxt_unit_websocket_retain(nxt_unit_websocket_frame_t *ws);
-
-void nxt_unit_websocket_done(nxt_unit_websocket_frame_t *ws);
 
 
 void *nxt_unit_malloc(nxt_unit_ctx_t *ctx, size_t size);

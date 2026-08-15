@@ -20,7 +20,6 @@ typedef struct nxt_unit_field_s            nxt_unit_field_t;
 typedef struct nxt_unit_request_s          nxt_unit_request_t;
 typedef struct nxt_unit_response_s         nxt_unit_response_t;
 typedef struct nxt_unit_read_info_s        nxt_unit_read_info_t;
-typedef struct nxt_unit_websocket_frame_s  nxt_unit_websocket_frame_t;
 
 
 #endif /* _NXT_UNIT_TYPEDEFS_H_INCLUDED_ */

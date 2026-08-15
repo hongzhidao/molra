@@ -33,7 +33,6 @@ static PyObject *nxt_py_asgi_create_http_scope(nxt_unit_request_info_t *req);
 static PyObject *nxt_py_asgi_create_address(nxt_unit_sptr_t *sptr, uint8_t len,
     uint16_t port);
 static PyObject *nxt_py_asgi_create_header(nxt_unit_field_t *f);
-static PyObject *nxt_py_asgi_create_subprotocols(nxt_unit_field_t *f);
 
 static int nxt_py_asgi_add_port(nxt_unit_ctx_t *ctx, nxt_unit_port_t *port);
 static int nxt_py_asgi_add_reader(nxt_unit_ctx_t *ctx, nxt_unit_port_t *port);
@@ -57,9 +56,6 @@ static nxt_python_proto_t  nxt_py_asgi_proto = {
     .run            = nxt_python_asgi_run,
     .done           = nxt_python_asgi_done,
 };
-
-#define NXT_UNIT_HASH_WS_PROTOCOL  0xED0A
-
 
 int
 nxt_python_asgi_check(PyObject *obj)
@@ -161,10 +157,6 @@ nxt_python_asgi_init(nxt_unit_init_t *init, nxt_python_proto_t *proto)
         return NXT_UNIT_ERROR;
     }
 
-    if (nxt_slow_path(nxt_py_asgi_websocket_init() == NXT_UNIT_ERROR)) {
-        return NXT_UNIT_ERROR;
-    }
-
     for (i = 0; i < nxt_py_targets->count; i++) {
         func = nxt_python_asgi_get_func(nxt_py_targets->target[i].application);
         if (nxt_slow_path(func == NULL)) {
@@ -187,7 +179,6 @@ nxt_python_asgi_init(nxt_unit_init_t *init, nxt_python_proto_t *proto)
 
     init->callbacks.request_handler = nxt_py_asgi_request_handler;
     init->callbacks.data_handler = nxt_py_asgi_http_data_handler;
-    init->callbacks.websocket_handler = nxt_py_asgi_websocket_handler;
     init->callbacks.close_handler = nxt_py_asgi_close_handler;
     init->callbacks.quit = nxt_py_asgi_quit;
     init->callbacks.shm_ack_handler = nxt_py_asgi_shm_ack_handler;
@@ -451,12 +442,7 @@ nxt_py_asgi_request_handler(nxt_unit_request_info_t *req)
     nxt_python_target_t     *target;
     nxt_py_asgi_ctx_data_t  *ctx_data;
 
-    if (req->request->websocket_handshake) {
-        asgi = nxt_py_asgi_websocket_create(req);
-
-    } else {
-        asgi = nxt_py_asgi_http_create(req);
-    }
+    asgi = nxt_py_asgi_http_create(req);
 
     if (nxt_slow_path(asgi == NULL)) {
         nxt_unit_req_alert(req, "Python failed to create asgi object");
@@ -597,12 +583,7 @@ release_asgi:
 static void
 nxt_py_asgi_close_handler(nxt_unit_request_info_t *req)
 {
-    if (req->request->websocket_handshake) {
-        nxt_py_asgi_websocket_close_handler(req);
-
-    } else {
-        nxt_py_asgi_http_close_handler(req);
-    }
+    nxt_py_asgi_http_close_handler(req);
 }
 
 
@@ -611,13 +592,11 @@ nxt_py_asgi_create_http_scope(nxt_unit_request_info_t *req)
 {
     char                *p, *target, *query;
     uint32_t            target_length, i;
-    PyObject            *scope, *v, *type, *scheme;
+    PyObject            *scope, *v, *scheme;
     PyObject            *headers, *header;
     unsigned long       port;
     nxt_unit_field_t    *f;
     nxt_unit_request_t  *r;
-
-    static const nxt_str_t  ws_protocol = nxt_string("sec-websocket-protocol");
 
 #define SET_ITEM(dict, key, value) \
     if (nxt_slow_path(PyDict_SetItem(dict, nxt_py_ ## key ## _str, value)      \
@@ -633,16 +612,9 @@ nxt_py_asgi_create_http_scope(nxt_unit_request_info_t *req)
 
     r = req->request;
 
-    if (r->websocket_handshake) {
-        type = nxt_py_websocket_str;
-        scheme = r->https ? nxt_py_wss_str : nxt_py_ws_str;
+    scheme = r->https ? nxt_py_https_str : nxt_py_http_str;
 
-    } else {
-        type = nxt_py_http_str;
-        scheme = r->https ? nxt_py_https_str : nxt_py_http_str;
-    }
-
-    scope = nxt_py_asgi_new_scope(req, type, nxt_py_2_1_str);
+    scope = nxt_py_asgi_new_scope(req, nxt_py_http_str, nxt_py_2_1_str);
     if (nxt_slow_path(scope == NULL)) {
         return NULL;
     }
@@ -739,21 +711,6 @@ nxt_py_asgi_create_http_scope(nxt_unit_request_info_t *req)
         }
 
         PyTuple_SET_ITEM(headers, i, header);
-
-        if (f->hash == NXT_UNIT_HASH_WS_PROTOCOL
-            && f->name_length == ws_protocol.length
-            && f->value_length > 0
-            && r->websocket_handshake)
-        {
-            v = nxt_py_asgi_create_subprotocols(f);
-            if (nxt_slow_path(v == NULL)) {
-                nxt_unit_req_alert(req, "Failed to create subprotocols");
-                goto fail;
-            }
-
-            SET_ITEM(scope, subprotocols, v);
-            Py_DECREF(v);
-        }
     }
 
     SET_ITEM(scope, headers, headers)
@@ -849,74 +806,6 @@ nxt_py_asgi_create_header(nxt_unit_field_t *f)
     PyTuple_SET_ITEM(header, 1, v);
 
     return header;
-}
-
-
-static PyObject *
-nxt_py_asgi_create_subprotocols(nxt_unit_field_t *f)
-{
-    char      *v;
-    uint32_t  i, n, start;
-    PyObject  *res, *proto;
-
-    v = nxt_unit_sptr_get(&f->value);
-    n = 1;
-
-    for (i = 0; i < f->value_length; i++) {
-        if (v[i] == ',') {
-            n++;
-        }
-    }
-
-    res = PyTuple_New(n);
-    if (nxt_slow_path(res == NULL)) {
-        return NULL;
-    }
-
-    n = 0;
-    start = 0;
-
-    for (i = 0; i < f->value_length; ) {
-        if (v[i] != ',') {
-            i++;
-
-            continue;
-        }
-
-        if (i - start > 0) {
-            proto = PyString_FromStringAndSize(v + start, i - start);
-            if (nxt_slow_path(proto == NULL)) {
-                goto fail;
-            }
-
-            PyTuple_SET_ITEM(res, n, proto);
-
-            n++;
-        }
-
-        do {
-            i++;
-        } while (i < f->value_length && v[i] == ' ');
-
-        start = i;
-    }
-
-    if (i - start > 0) {
-        proto = PyString_FromStringAndSize(v + start, i - start);
-        if (nxt_slow_path(proto == NULL)) {
-            goto fail;
-        }
-
-        PyTuple_SET_ITEM(res, n, proto);
-    }
-
-    return res;
-
-fail:
-
-    Py_DECREF(res);
-
-    return NULL;
 }
 
 

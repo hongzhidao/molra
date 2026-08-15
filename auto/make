@@ -60,7 +60,6 @@ $echo "NXT_LIB_UNIT_OBJS = \\" >> $NXT_MAKEFILE
 $echo "	$NXT_BUILD_DIR/src/nxt_lvlhsh.o \\" >> $NXT_MAKEFILE
 $echo "	$NXT_BUILD_DIR/src/nxt_murmur_hash.o \\" >> $NXT_MAKEFILE
 $echo "	$NXT_BUILD_DIR/src/nxt_socket_msg.o \\" >> $NXT_MAKEFILE
-$echo "	$NXT_BUILD_DIR/src/nxt_websocket.o \\" >> $NXT_MAKEFILE
 
 for nxt_src in $NXT_LIB_UNIT_SRCS
 do
@@ -111,9 +110,7 @@ END
 # Object files.
 
 for nxt_src in $NXT_LIB_SRCS $NXT_TEST_SRCS $NXT_LIB_UNIT_SRCS \
-               src/test/nxt_unit_app_test.c \
-               src/test/nxt_unit_websocket_chat.c \
-               src/test/nxt_unit_websocket_echo.c
+               src/test/nxt_unit_app_test.c
 do
     nxt_obj=${nxt_src%.c}.o
     nxt_dep=${nxt_src%.c}.dep
@@ -193,8 +190,7 @@ if [ $NXT_TESTS = YES ]; then
 tests:		$NXT_BUILD_DIR/tests $NXT_BUILD_DIR/utf8_file_name_test \\
 			$NXT_BUILD_DIR/ncq_test \\
 			$NXT_BUILD_DIR/vbcq_test \\
-			$NXT_BUILD_DIR/unit_app_test $NXT_BUILD_DIR/unit_websocket_chat \\
-			$NXT_BUILD_DIR/unit_websocket_echo
+			$NXT_BUILD_DIR/unit_app_test
 
 $NXT_BUILD_DIR/tests: \$(NXT_TEST_OBJS) \\
 			$NXT_BUILD_DIR/$NXT_LIB_STATIC
@@ -229,22 +225,6 @@ $NXT_BUILD_DIR/unit_app_test: $NXT_BUILD_DIR/src/test/nxt_unit_app_test.o \\
 		$NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC
 	\$(NXT_EXEC_LINK) -o $NXT_BUILD_DIR/unit_app_test \\
 		\$(CFLAGS) $NXT_BUILD_DIR/src/test/nxt_unit_app_test.o \\
-		$NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC \\
-		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS
-
-$NXT_BUILD_DIR/unit_websocket_chat: \\
-		$NXT_BUILD_DIR/src/test/nxt_unit_websocket_chat.o \\
-		$NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC
-	\$(NXT_EXEC_LINK) -o $NXT_BUILD_DIR/unit_websocket_chat \\
-		\$(CFLAGS) $NXT_BUILD_DIR/src/test/nxt_unit_websocket_chat.o \\
-		$NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC \\
-		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS
-
-$NXT_BUILD_DIR/unit_websocket_echo: \\
-		$NXT_BUILD_DIR/src/test/nxt_unit_websocket_echo.o \\
-		$NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC
-	\$(NXT_EXEC_LINK) -o $NXT_BUILD_DIR/unit_websocket_echo \\
-		\$(CFLAGS) $NXT_BUILD_DIR/src/test/nxt_unit_websocket_echo.o \\
 		$NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC \\
 		$NXT_LD_OPT $NXT_LIBM $NXT_LIBS $NXT_LIB_AUX_LIBS
 
@@ -405,10 +385,8 @@ libunit-install: $NXT_BUILD_DIR/$NXT_LIB_UNIT_STATIC
 		src/nxt_unit_response.h \
 		src/nxt_unit_sptr.h \
 		src/nxt_unit_typedefs.h \
-		src/nxt_unit_websocket.h \
 		$NXT_BUILD_DIR/nxt_auto_config.h \
 		$NXT_BUILD_DIR/nxt_version.h \
-		src/nxt_websocket_header.h \
 		\$(DESTDIR)$NXT_INCDIR/
 
 libunit-uninstall:
@@ -422,10 +400,8 @@ libunit-uninstall:
 		\$(DESTDIR)$NXT_INCDIR/nxt_unit_response.h \
 		\$(DESTDIR)$NXT_INCDIR/nxt_unit_sptr.h \
 		\$(DESTDIR)$NXT_INCDIR/nxt_unit_typedefs.h \
-		\$(DESTDIR)$NXT_INCDIR/nxt_unit_websocket.h \
 		\$(DESTDIR)$NXT_INCDIR/nxt_auto_config.h \
-		\$(DESTDIR)$NXT_INCDIR/nxt_version.h \
-		\$(DESTDIR)$NXT_INCDIR/nxt_websocket_header.h
+		\$(DESTDIR)$NXT_INCDIR/nxt_version.h
 	@rmdir -p \$(DESTDIR)$NXT_INCDIR 2>/dev/null || true
 
 END

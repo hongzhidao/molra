@@ -18,7 +18,6 @@ typedef enum {
     NXT_APR_NEW_PORT,
     NXT_APR_REQUEST_FAILED,
     NXT_APR_GOT_RESPONSE,
-    NXT_APR_UPGRADE,
     NXT_APR_CLOSE,
 } nxt_apr_action_t;
 
