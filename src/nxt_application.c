@@ -1032,9 +1032,6 @@ nxt_app_parse_type(u_char *p, size_t length)
     if (nxt_str_eq(&str, "external", 8)) {
         return NXT_APP_EXTERNAL;
 
-    } else if (nxt_str_eq(&str, "python", 6)) {
-        return NXT_APP_PYTHON;
-
     } else if (nxt_str_eq(&str, "php", 3)) {
         return NXT_APP_PHP;
     }

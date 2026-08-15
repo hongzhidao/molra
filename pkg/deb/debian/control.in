@@ -15,8 +15,8 @@ Depends: lsb-base,
          ${misc:Depends}, ${shlibs:Depends}
 Description: NGINX Unit
  NGINX Unit is a runtime and delivery environment for modern distributed
- applications. It runs the application code in multiple languages
- (PHP, Python, etc.), and tightly couples it with traffic delivery
+ applications. It runs application code through language modules
+ and tightly couples it with traffic delivery
  in and out of the application. Deploy this application server
  directly in the cloud / container environments and fully control your app
  dynamically via an API.

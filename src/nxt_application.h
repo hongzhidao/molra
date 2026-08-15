@@ -16,7 +16,6 @@
 
 typedef enum {
     NXT_APP_EXTERNAL,
-    NXT_APP_PYTHON,
     NXT_APP_PHP,
 
     NXT_APP_UNKNOWN,
@@ -44,15 +43,6 @@ typedef struct {
 
 
 typedef struct {
-    char                       *home;
-    nxt_conf_value_t           *path;
-    nxt_str_t                  module;
-    char                       *callable;
-    nxt_conf_value_t           *targets;
-} nxt_python_app_conf_t;
-
-
-typedef struct {
     nxt_conf_value_t           *targets;
     nxt_conf_value_t           *options;
 } nxt_php_app_conf_t;
@@ -75,7 +65,6 @@ struct nxt_common_app_conf_s {
 
     union {
         nxt_external_app_conf_t  external;
-        nxt_python_app_conf_t    python;
         nxt_php_app_conf_t       php;
     } u;
 

@@ -22,46 +22,31 @@ MODULES=
 # Ubuntu 21.10
 ifeq ($(CODENAME),impish)
 include Makefile.php
-include Makefile.python27
-include Makefile.python39
-include Makefile.python310
 endif
 
 # Ubuntu 21.04
 ifeq ($(CODENAME),hirsute)
 include Makefile.php
-include Makefile.python27
-include Makefile.python39
 endif
 
 # Ubuntu 20.04
 ifeq ($(CODENAME),focal)
 include Makefile.php
-include Makefile.python27
-include Makefile.python38
 endif
 
 # Ubuntu 18.04
 ifeq ($(CODENAME),bionic)
 include Makefile.php
-include Makefile.python27
-include Makefile.python36
-include Makefile.python37
-include Makefile.python38
 endif
 
 # Debian 11
 ifeq ($(CODENAME),bullseye)
 include Makefile.php
-include Makefile.python27
-include Makefile.python39
 endif
 
 # Debian 10
 ifeq ($(CODENAME),buster)
 include Makefile.php
-include Makefile.python27
-include Makefile.python37
 endif
 
 CONFIGURE_ARGS_COMMON=\

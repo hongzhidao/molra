@@ -173,39 +173,6 @@ static nxt_conf_map_t  nxt_external_app_conf[] = {
 };
 
 
-static nxt_conf_map_t  nxt_python_app_conf[] = {
-    {
-        nxt_string("home"),
-        NXT_CONF_MAP_CSTRZ,
-        offsetof(nxt_common_app_conf_t, u.python.home),
-    },
-
-    {
-        nxt_string("path"),
-        NXT_CONF_MAP_PTR,
-        offsetof(nxt_common_app_conf_t, u.python.path),
-    },
-
-    {
-        nxt_string("module"),
-        NXT_CONF_MAP_STR,
-        offsetof(nxt_common_app_conf_t, u.python.module),
-    },
-
-    {
-        nxt_string("callable"),
-        NXT_CONF_MAP_CSTRZ,
-        offsetof(nxt_common_app_conf_t, u.python.callable),
-    },
-
-    {
-        nxt_string("targets"),
-        NXT_CONF_MAP_PTR,
-        offsetof(nxt_common_app_conf_t, u.python.targets),
-    },
-};
-
-
 static nxt_conf_map_t  nxt_php_app_conf[] = {
     {
         nxt_string("targets"),
@@ -223,7 +190,6 @@ static nxt_conf_map_t  nxt_php_app_conf[] = {
 
 static nxt_conf_app_map_t  nxt_app_maps[] = {
     { nxt_nitems(nxt_external_app_conf),  nxt_external_app_conf },
-    { nxt_nitems(nxt_python_app_conf),    nxt_python_app_conf },
     { nxt_nitems(nxt_php_app_conf),       nxt_php_app_conf },
 };
 

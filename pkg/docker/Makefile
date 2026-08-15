@@ -10,7 +10,7 @@ PATCHLEVEL ?= 1
 
 EXPORT_DIR := $(VERSION)
 
-MODULES ?= php python
+MODULES ?= php
 
 VARIANT ?= bullseye
 
@@ -27,13 +27,6 @@ $(foreach phpversion, $(VERSIONS_php), $(eval CONTAINER_php$(phpversion) = php:$
 CONFIGURE_php ?=	php
 INSTALL_php ?=		php-install
 COPY_php =			RUN ldconfig
-
-VERSIONS_python ?=	3.9
-VARIANT_python ?=	$(VARIANT)
-$(foreach pythonversion, $(VERSIONS_python), $(eval CONTAINER_python$(pythonversion) = python:$(pythonversion)-$(VARIANT_python)))
-CONFIGURE_python ?=	python --config=/usr/local/bin/python3-config
-INSTALL_python ?=	python3-install
-COPY_python =
 
 default:
 	@echo "valid targets: all build dockerfiles push tag export clean"

@@ -12,23 +12,7 @@ http = HTTP1()
 def check_isolation():
     available = option.available
 
-    conf = ''
-    if 'python' in available['modules']:
-        conf = {
-            "listeners": {"*:8080": {"pass": "applications/empty"}},
-            "applications": {
-                "empty": {
-                    "type": "python",
-                    "processes": {"spare": 0},
-                    "path": option.test_dir + "/python/empty",
-                    "working_directory": option.test_dir + "/python/empty",
-                    "module": "wsgi",
-                    "isolation": {"namespaces": {"credential": True}},
-                }
-            },
-        }
-
-    elif 'php' in available['modules']:
+    if 'php' in available['modules']:
         conf = {
             "listeners": {"*:8080": {"pass": "applications/phpinfo"}},
             "applications": {

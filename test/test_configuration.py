@@ -2,23 +2,16 @@ import socket
 
 import pytest
 from unit.control import Control
-from unit.option import option
-
-prerequisites = {'modules': {'python': 'any'}}
 
 
 client = Control()
 
 
 def empty_application():
-    path = option.test_dir + '/python/empty'
-
     return {
-        "type": "python",
+        "type": "external",
         "processes": {"spare": 0},
-        "path": path,
-        "working_directory": path,
-        "module": "wsgi",
+        "executable": "/app",
     }
 
 
@@ -41,10 +34,9 @@ def test_json_unicode():
         """
         {
             "ap\u0070": {
-                "type": "\u0070ython",
+                "type": "\u0065xternal",
                 "processes": { "spare": 0 },
-                "path": "\u002Fapp",
-                "module": "wsgi"
+                "executable": "\u002Fapp"
             }
         }
         """,
@@ -53,10 +45,9 @@ def test_json_unicode():
 
     assert client.conf_get('applications') == {
         "app": {
-            "type": "python",
+            "type": "external",
             "processes": {"spare": 0},
-            "path": "/app",
-            "module": "wsgi",
+            "executable": "/app",
         }
     }, 'unicode get'
 
@@ -64,10 +55,9 @@ def test_json_unicode_2():
     assert 'success' in client.conf(
         {
             "приложение": {
-                "type": "python",
+                "type": "external",
                 "processes": {"spare": 0},
-                "path": "/app",
-                "module": "wsgi",
+                "executable": "/app",
             }
         },
         'applications',
@@ -80,10 +70,9 @@ def test_json_unicode_number():
         """
         {
             "app": {
-                "type": "python",
+                "type": "external",
                 "processes": { "spare": \u0030 },
-                "path": "/app",
-                "module": "wsgi"
+                "executable": "/app"
             }
         }
         """,
@@ -95,10 +84,9 @@ def test_json_utf8_bom():
         b"""\xEF\xBB\xBF
         {
             "app": {
-                "type": "python",
+                "type": "external",
                 "processes": {"spare": 0},
-                "path": "/app",
-                "module": "wsgi"
+                "executable": "/app"
             }
         }
         """,
@@ -111,11 +99,10 @@ def test_json_comment_single_line():
         // this is bridge
         {
             "//app": {
-                "type": "python", // end line
+                "type": "external", // end line
                 "processes": {"spare": 0},
                 // inside of block
-                "path": "/app",
-                "module": "wsgi"
+                "executable": "/app"
             }
             // double //
         }
@@ -133,10 +120,9 @@ def test_json_comment_multi_line():
             /**
              * multiple lines
              **/
-                "type": "python",
+                "type": "external",
                 "processes": /* inline */ {"spare": 0},
-                "path": "/app",
-                "module": "wsgi"
+                "executable": "/app"
                 /*
                 // end of block */
             }
@@ -163,7 +149,7 @@ def test_applications_string():
 @pytest.mark.skip('not yet, unsafe')
 def test_applications_type_only():
     assert 'error' in client.conf(
-        {"app": {"type": "python"}}, 'applications'
+        {"app": {"type": "external"}}, 'applications'
     ), 'type only'
 
 def test_applications_miss_quote():
@@ -171,10 +157,9 @@ def test_applications_miss_quote():
         """
         {
             app": {
-                "type": "python",
+                "type": "external",
                 "processes": { "spare": 0 },
-                "path": "/app",
-                "module": "wsgi"
+                "executable": "/app"
             }
         }
         """,
@@ -186,10 +171,9 @@ def test_applications_miss_colon():
         """
         {
             "app" {
-                "type": "python",
+                "type": "external",
                 "processes": { "spare": 0 },
-                "path": "/app",
-                "module": "wsgi"
+                "executable": "/app"
             }
         }
         """,
@@ -201,10 +185,9 @@ def test_applications_miss_comma():
         """
         {
             "app": {
-                "type": "python"
+                "type": "external"
                 "processes": { "spare": 0 },
-                "path": "/app",
-                "module": "wsgi"
+                "executable": "/app"
             }
         }
         """,
@@ -220,10 +203,9 @@ def test_applications_relative_path():
     assert 'success' in client.conf(
         {
             "app": {
-                "type": "python",
+                "type": "external",
                 "processes": {"spare": 0},
-                "path": "../app",
-                "module": "wsgi",
+                "executable": "../app",
             }
         },
         'applications',
@@ -330,10 +312,9 @@ def test_json_application_name_large():
             "listeners": {"*:8080": {"pass": "applications/" + name}},
             "applications": {
                 name: {
-                    "type": "python",
+                    "type": "external",
                     "processes": {"spare": 0},
-                    "path": "/app",
-                    "module": "wsgi",
+                    "executable": "/app",
                 }
             },
         }
@@ -347,10 +328,9 @@ def test_json_application_many():
         "applications": {
             "app-"
             + str(a): {
-                "type": "python",
+                "type": "external",
                 "processes": {"spare": 0},
-                "path": "/app",
-                "module": "wsgi",
+                "executable": "/app",
             }
             for a in range(apps)
         },
@@ -367,10 +347,9 @@ def test_json_application_many2():
         "applications": {
             "app-"
             + str(a): {
-                "type": "python",
+                "type": "external",
                 "processes": {"spare": 0},
-                "path": "/app",
-                "module": "wsgi",
+                "executable": "/app",
             }
             # Larger number of applications can cause test fail with default
             # open files limit due to the lack of file descriptors.

@@ -319,7 +319,7 @@ nxt_http_application_handler(nxt_task_t *task, nxt_http_request_t *r,
 
     /*
      * TODO: need an application flag to get local address
-     * required by "SERVER_ADDR" in Python and PHP.
+     * required by "SERVER_ADDR" in PHP.
      */
     nxt_http_request_proto_info(task, r);
 

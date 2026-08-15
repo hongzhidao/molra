@@ -54,72 +54,34 @@ MODULES=
 
 ifeq ($(OSVER), centos6)
 include Makefile.php
-include Makefile.python
 endif
 
 ifeq ($(OSVER), centos7)
 include Makefile.php
-include Makefile.python27
-include Makefile.python36
 endif
 
 ifeq ($(OSVER), centos8)
 include Makefile.php
-include Makefile.python27
-include Makefile.python36
 endif
 
 ifeq ($(OSVER), amazonlinux1)
 include Makefile.php
-include Makefile.python27
-include Makefile.python34
-include Makefile.python35
-include Makefile.python36
 endif
 
 ifeq ($(OSVER), amazonlinux2)
 include Makefile.php
-include Makefile.python27
-include Makefile.python37
-endif
-
-ifeq ($(OSVER), opensuse-leap)
-include Makefile.python27
-include Makefile.python34
 endif
 
 ifeq ($(OSVER), opensuse-tumbleweed)
 include Makefile.php
-include Makefile.python27
-include Makefile.python36
-endif
-
-ifeq ($(OSVER), sles)
-include Makefile.python27
-include Makefile.python34
 endif
 
 ifeq ($(OSVER), fedora)
 include Makefile.php
-ifeq ($(shell test `rpm --eval '0%{?fedora} -lt 32'`; echo $$?),0)
-include Makefile.python27
-endif
-ifeq ($(shell test `rpm --eval '0%{?fedora} -ge 35'`; echo $$?),0)
-include Makefile.python310
-else ifeq ($(shell test `rpm --eval '0%{?fedora} -ge 33'`; echo $$?),0)
-include Makefile.python39
-else ifeq ($(shell test `rpm --eval '0%{?fedora} -ge 32'`; echo $$?),0)
-include Makefile.python38
-else ifeq ($(shell test `rpm --eval '0%{?fedora} -ge 29'`; echo $$?),0)
-include Makefile.python37
-else
-include Makefile.python36
-endif
 endif
 
 ifeq ($(OSVER), fedora41)
 include Makefile.php
-include Makefile.python313
 endif
 
 CONFIGURE_ARGS_COMMON=\

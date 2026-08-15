@@ -43,9 +43,6 @@ cat << END
   --debug              enable debug logging
 
 
-  python OPTIONS       configure Python module
-                       run "./configure python --help" to see available options
-
   php OPTIONS          configure PHP module
                        run "./configure php --help" to see available options
 
