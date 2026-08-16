@@ -1029,10 +1029,7 @@ nxt_app_parse_type(u_char *p, size_t length)
     str.length = length;
     str.start = p;
 
-    if (nxt_str_eq(&str, "external", 8)) {
-        return NXT_APP_EXTERNAL;
-
-    } else if (nxt_str_eq(&str, "php", 3)) {
+    if (nxt_str_eq(&str, "php", 3)) {
         return NXT_APP_PHP;
     }
 

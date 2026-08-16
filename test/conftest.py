@@ -118,7 +118,6 @@ def pytest_generate_tests(metafunc):
         not hasattr(module, 'client')
         or not hasattr(module.client, 'application_type')
         or module.client.application_type is None
-        or module.client.application_type == 'external'
     ):
         return
 

@@ -4,14 +4,16 @@ import pytest
 from unit.control import Control
 
 
+prerequisites = {'modules': {'php': 'any'}}
+
 client = Control()
 
 
 def empty_application():
     return {
-        "type": "external",
+        "type": "php",
         "processes": {"spare": 0},
-        "executable": "/app",
+        "root": "/app",
     }
 
 
@@ -34,9 +36,9 @@ def test_json_unicode():
         """
         {
             "ap\u0070": {
-                "type": "\u0065xternal",
+                "type": "\u0070hp",
                 "processes": { "spare": 0 },
-                "executable": "\u002Fapp"
+                "root": "\u002Fapp"
             }
         }
         """,
@@ -45,9 +47,9 @@ def test_json_unicode():
 
     assert client.conf_get('applications') == {
         "app": {
-            "type": "external",
+            "type": "php",
             "processes": {"spare": 0},
-            "executable": "/app",
+            "root": "/app",
         }
     }, 'unicode get'
 
@@ -55,9 +57,9 @@ def test_json_unicode_2():
     assert 'success' in client.conf(
         {
             "приложение": {
-                "type": "external",
+                "type": "php",
                 "processes": {"spare": 0},
-                "executable": "/app",
+                "root": "/app",
             }
         },
         'applications',
@@ -70,9 +72,9 @@ def test_json_unicode_number():
         """
         {
             "app": {
-                "type": "external",
+                "type": "php",
                 "processes": { "spare": \u0030 },
-                "executable": "/app"
+                "root": "/app"
             }
         }
         """,
@@ -84,9 +86,9 @@ def test_json_utf8_bom():
         b"""\xEF\xBB\xBF
         {
             "app": {
-                "type": "external",
+                "type": "php",
                 "processes": {"spare": 0},
-                "executable": "/app"
+                "root": "/app"
             }
         }
         """,
@@ -99,10 +101,10 @@ def test_json_comment_single_line():
         // this is bridge
         {
             "//app": {
-                "type": "external", // end line
+                "type": "php", // end line
                 "processes": {"spare": 0},
                 // inside of block
-                "executable": "/app"
+                "root": "/app"
             }
             // double //
         }
@@ -120,9 +122,9 @@ def test_json_comment_multi_line():
             /**
              * multiple lines
              **/
-                "type": "external",
+                "type": "php",
                 "processes": /* inline */ {"spare": 0},
-                "executable": "/app"
+                "root": "/app"
                 /*
                 // end of block */
             }
@@ -149,17 +151,30 @@ def test_applications_string():
 @pytest.mark.skip('not yet, unsafe')
 def test_applications_type_only():
     assert 'error' in client.conf(
-        {"app": {"type": "external"}}, 'applications'
+        {"app": {"type": "php"}}, 'applications'
     ), 'type only'
+
+
+def test_applications_external_unsupported():
+    assert 'error' in client.conf(
+        {
+            "app": {
+                "type": "external",
+                "processes": {"spare": 0},
+                "executable": "/app",
+            }
+        },
+        'applications',
+    ), 'external application type'
 
 def test_applications_miss_quote():
     assert 'error' in client.conf(
         """
         {
             app": {
-                "type": "external",
+                "type": "php",
                 "processes": { "spare": 0 },
-                "executable": "/app"
+                "root": "/app"
             }
         }
         """,
@@ -171,9 +186,9 @@ def test_applications_miss_colon():
         """
         {
             "app" {
-                "type": "external",
+                "type": "php",
                 "processes": { "spare": 0 },
-                "executable": "/app"
+                "root": "/app"
             }
         }
         """,
@@ -185,9 +200,9 @@ def test_applications_miss_comma():
         """
         {
             "app": {
-                "type": "external"
+                "type": "php"
                 "processes": { "spare": 0 },
-                "executable": "/app"
+                "root": "/app"
             }
         }
         """,
@@ -203,9 +218,9 @@ def test_applications_relative_path():
     assert 'success' in client.conf(
         {
             "app": {
-                "type": "external",
+                "type": "php",
                 "processes": {"spare": 0},
-                "executable": "../app",
+                "root": "../app",
             }
         },
         'applications',
@@ -318,9 +333,9 @@ def test_json_application_name_large():
             "listeners": {"*:8080": {"pass": "applications/" + name}},
             "applications": {
                 name: {
-                    "type": "external",
+                    "type": "php",
                     "processes": {"spare": 0},
-                    "executable": "/app",
+                    "root": "/app",
                 }
             },
         }
@@ -334,9 +349,9 @@ def test_json_application_many():
         "applications": {
             "app-"
             + str(a): {
-                "type": "external",
+                "type": "php",
                 "processes": {"spare": 0},
-                "executable": "/app",
+                "root": "/app",
             }
             for a in range(apps)
         },
@@ -353,9 +368,9 @@ def test_json_application_many2():
         "applications": {
             "app-"
             + str(a): {
-                "type": "external",
+                "type": "php",
                 "processes": {"spare": 0},
-                "executable": "/app",
+                "root": "/app",
             }
             # Larger number of applications can cause test fail with default
             # open files limit due to the lack of file descriptors.
@@ -374,9 +389,9 @@ def test_unprivileged_user_error(require, skip_alert):
     assert 'error' in client.conf(
         {
             "app": {
-                "type": "external",
+                "type": "php",
                 "processes": 1,
-                "executable": "/app",
+                "root": "/app",
                 "user": "root",
             }
         },

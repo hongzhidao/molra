@@ -155,22 +155,6 @@ static nxt_conf_map_t  nxt_common_app_limits_conf[] = {
 };
 
 
-static nxt_conf_map_t  nxt_external_app_conf[] = {
-    {
-        nxt_string("executable"),
-        NXT_CONF_MAP_CSTRZ,
-        offsetof(nxt_common_app_conf_t, u.external.executable),
-    },
-
-    {
-        nxt_string("arguments"),
-        NXT_CONF_MAP_PTR,
-        offsetof(nxt_common_app_conf_t, u.external.arguments),
-    },
-
-};
-
-
 static nxt_conf_map_t  nxt_php_app_conf[] = {
     {
         nxt_string("targets"),
@@ -187,8 +171,7 @@ static nxt_conf_map_t  nxt_php_app_conf[] = {
 
 
 static nxt_conf_app_map_t  nxt_app_maps[] = {
-    { nxt_nitems(nxt_external_app_conf),  nxt_external_app_conf },
-    { nxt_nitems(nxt_php_app_conf),       nxt_php_app_conf },
+    { nxt_nitems(nxt_php_app_conf),  nxt_php_app_conf },
 };
 
 

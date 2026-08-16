@@ -15,7 +15,6 @@
 
 
 typedef enum {
-    NXT_APP_EXTERNAL,
     NXT_APP_PHP,
 
     NXT_APP_UNKNOWN,
@@ -34,12 +33,6 @@ typedef struct {
     nxt_app_module_t          *module;
     nxt_array_t               *mounts;    /* of nxt_fs_mount_t */
 } nxt_app_lang_module_t;
-
-
-typedef struct {
-    char                       *executable;
-    nxt_conf_value_t           *arguments;
-} nxt_external_app_conf_t;
 
 
 typedef struct {
@@ -64,7 +57,6 @@ struct nxt_common_app_conf_s {
     uint32_t                   request_limit;
 
     union {
-        nxt_external_app_conf_t  external;
         nxt_php_app_conf_t       php;
     } u;
 
@@ -91,8 +83,6 @@ nxt_app_lang_module_t *nxt_app_lang_module(nxt_runtime_t *rt, nxt_str_t *name);
 nxt_app_type_t nxt_app_parse_type(u_char *p, size_t length);
 
 NXT_EXPORT extern nxt_str_t  nxt_server;
-extern nxt_app_module_t      nxt_external_module;
-
 NXT_EXPORT nxt_int_t nxt_unit_default_init(nxt_task_t *task,
     nxt_unit_init_t *init, nxt_common_app_conf_t *conf);
 

@@ -43,7 +43,6 @@ nxt_runtime_create(nxt_task_t *task)
     nxt_int_t              ret;
     nxt_array_t            *listen_sockets;
     nxt_runtime_t          *rt;
-    nxt_app_lang_module_t  *lang;
 
     mp = nxt_mp_create(1024, 128, 256, 32);
     if (nxt_slow_path(mp == NULL)) {
@@ -67,18 +66,6 @@ nxt_runtime_create(nxt_task_t *task)
 
     rt->languages = nxt_array_create(mp, 1, sizeof(nxt_app_lang_module_t));
     if (nxt_slow_path(rt->languages == NULL)) {
-        goto fail;
-    }
-
-    /* Should not fail. */
-    lang = nxt_array_add(rt->languages);
-    lang->type = NXT_APP_EXTERNAL;
-    lang->version = (u_char *) "";
-    lang->file = NULL;
-    lang->module = &nxt_external_module;
-
-    lang->mounts = nxt_array_create(mp, 1, sizeof(nxt_fs_mount_t));
-    if (nxt_slow_path(lang->mounts == NULL)) {
         goto fail;
     }
 
